@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- META -->
+<meta charset="utf-8">
+<meta name="Generator" content="XpressEngine">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=1.0, user-scalable=yes">
+<!-- TITLE -->
+<title>Kiwi 지능형 한국어 형태소 분석기</title>
+<!-- CSS -->
+<link rel="stylesheet" href="/common/css/xe.min.css?20180630180341" />
+<link rel="stylesheet" href="/common/js/plugins/ui/jquery-ui.min.css?20180630180341" />
+<link rel="stylesheet" href="/layouts/xet_onecolor/css/reset.css?20161205164305" />
+<link rel="stylesheet" href="/layouts/xet_onecolor/css/selecter.css?20151004162455" />
+<link rel="stylesheet" href="/layouts/xet_onecolor/css/layout.css?20151004162455" />
+<link rel="stylesheet" href="/layouts/xet_onecolor/css/animate.min.css?20151004162455" />
+<link rel="stylesheet" href="/layouts/xet_onecolor/css/responsive.css?20151004162455" />
+<link rel="stylesheet" href="/layouts/xet_onecolor/css/XEIcon/xeicon.min.css?20151004162455" />
+<link rel="stylesheet" href="/modules/editor/styles/ckeditor_light/style.css?20180630180341" />
+<link rel="stylesheet" href="/files/faceOff/130/layout.css?20190904230457" />
+<!-- JS -->
+<script>
+var current_url = "https://lab.bab2min.pe.kr/?mid=kiwi";
+var request_uri = "https://lab.bab2min.pe.kr/";
+var current_mid = "kiwi";
+var waiting_message = "서버에 요청 중입니다. 잠시만 기다려주세요.";
+var ssl_actions = new Array();
+var default_url = "http://lab.bab2min.pe.kr/";
+var enforce_ssl = true;</script>
+<!--[if lt IE 9]><script src="/common/js/jquery-1.x.min.js?20180630180341"></script>
+<![endif]--><!--[if gte IE 9]><!--><script src="/common/js/jquery.min.js?20180630180341"></script>
+<!--<![endif]--><script src="/common/js/x.min.js?20180630180341"></script>
+<script src="/common/js/xe.min.js?20180630180341"></script>
+<script src="/addons/ga_send/ga_send.js?20180917193404"></script>
+<script src="/layouts/xet_onecolor/js/viewportchecker.js?20151004162458"></script>
+<script src="/layouts/xet_onecolor/js/modernizr.custom.js?20151004162458"></script>
+<script src="/layouts/xet_onecolor/js/jquery.ui.totop.js?20151004162457"></script>
+<script src="/layouts/xet_onecolor/js/jquery.easing.1.3.js?20151004162457"></script>
+<script src="/layouts/xet_onecolor/js/jquery.mobile.customized.min.js?20151004162457"></script>
+<script src="/layouts/xet_onecolor/js/camera.min.js?20151004162457"></script>
+<script src="/layouts/xet_onecolor/js/jquery.fs.selecter.min.js?20170822144314"></script>
+<script src="/layouts/xet_onecolor/js/layout.js?20151004162458"></script>
+<!-- RSS -->
+<!-- ICON -->
+
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=E6j5kvdWyW">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=E6j5kvdWyW">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=E6j5kvdWyW">
+<link rel="manifest" href="/manifest.json?v=E6j5kvdWyW">
+<link rel="mask-icon" href="/safari-pinned-tab.svg?v=E6j5kvdWyW" color="#5bbad5">
+<link rel="shortcut icon" href="/favicon.ico?v=E6j5kvdWyW">
+<meta name="theme-color" content="#ffffff">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-6659951163871882",
+    enable_page_level_ads: true
+  });
+</script>
+<link rel="canonical" href="https://lab.bab2min.pe.kr/kiwi/281" />
+<meta name="description" content="#query {margin:3px 0;font-size:14px;} #query .input {border:1px solid #ddf;padding:3px;} #query textarea {width:100%;border:none;resize:vertical;font-size:14px;} #query .control {background:#eef;border-bottom:1px solid #dde;padding:1px 3px;text-align:right;} #query button, #query select {font-size:14px} #kiwi-logo {text-align:center;} #kiwi-logo img {width:50%;} .std-table { border-collapse:colla..." />
+<meta property="og:locale" content="ko_KR" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lab.bab2min.pe.kr/kiwi/281" />
+<meta property="og:title" content="Kiwi 지능형 한국어 형태소 분석기" />
+<meta property="og:description" content="#query {margin:3px 0;font-size:14px;} #query .input {border:1px solid #ddf;padding:3px;} #query textarea {width:100%;border:none;resize:vertical;font-size:14px;} #query .control {background:#eef;border-bottom:1px solid #dde;padding:1px 3px;text-align:right;} #query button, #query select {font-size:14px} #kiwi-logo {text-align:center;} #kiwi-logo img {width:50%;} .std-table { border-collapse:colla..." />
+<meta property="article:published_time" content="2017-02-20T04:35:33+08:30" />
+<meta property="article:modified_time" content="2025-12-29T02:24:23+09:00" />
+<meta property="og:image" content="https://lab.bab2min.pe.kr/./files/attach/images/280/281/2682698655c2ada7c11c87a60dbe6e5e.png" />
+<meta property="og:image:width" content="1086" />
+<meta property="og:image:height" content="673" />
+<meta property="og:image" content="https://lab.bab2min.pe.kr/./files/attach/images/280/281/15324e1e13d09c01f365016fb3462a0f.png" />
+<meta property="og:image:width" content="1280" />
+<meta property="og:image:height" content="640" />
+<style type="text/css">
+/* background color */
+#xet_header.header_down,
+.cameraSlide,
+.xet_section .themebg,
+.xet_section.parallax,
+.xet_sns a,
+.xet_layout_btn:hover,
+.xet_lnb_title,
+ul.xet_lnb li a:hover, 
+ul.xet_lnb li a.on,
+#xet_top_scroll {
+	background-color: #28C165;
+}
+/* color */
+.xet_section,
+.xet_fulldown,
+.xet_mnav li a,
+.xet_side_widget .h3,
+.xet_layout_btn,
+.xet_layout_btn.w:hover,
+.xet_sns a:hover,
+.breadcrumb_wrp a,
+.breadcrumb_wrp ul li:after,
+.selecter-selected,
+#xet_footer,
+.xet_footer_nav li a,
+.xet_footer_nav > li:after {
+	color: #28C165;
+}
+/* border color */
+.xet_section .xet_icon,
+.xet_sns a,
+.xet_layout_btn {
+	border-color: #28C165;
+}
+.camera {
+background:url(https://lab.bab2min.pe.kr/files/attach/images/130/9348885a2f83493b637b1ed66dd160ab.JPG);
+background-size:100%;
+}
+</style>
+<style type="text/css">#query {margin:3px 0;font-size:14px;}
+#query .input {border:1px solid #ddf;padding:3px;}
+#query textarea {width:100%;border:none;resize:vertical;font-size:14px;}
+#query .control {background:#eef;border-bottom:1px solid #dde;padding:1px 3px;text-align:right;}
+#query button, #query select {font-size:14px}
+#kiwi-logo {text-align:center;}
+#kiwi-logo img {width:50%;}
+
+.std-table {
+border-collapse:collapse;
+}
+.std-table th, .std-table td {
+padding:1em;
+border:1px solid #dfd;
+}
+</style>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/xeicon/2/xeicon.min.css">
+<meta http-equiv="refresh" content="0;https://kiwi.bab2min.pe.kr"><script>
+//<![CDATA[
+xe.current_lang = "ko";
+xe.cmd_find = "찾기";
+xe.cmd_cancel = "취소";
+xe.cmd_confirm = "확인";
+xe.msg_no_root = "루트는 선택 할 수 없습니다.";
+xe.msg_no_shortcut = "바로가기는 선택 할 수 없습니다.";
+xe.msg_select_menu = "대상 메뉴 선택";
+//]]>
+</script>
+</head>
+<body>
+<!--
+Copyright 2014 inpleworks, Co. 
+-->
+<!-- // browser //-->
+<!-- // mobile responsive //-->
+<!-- Demo Setting -->
+<!-- // css //-->
+<!--load target="css/camera.css" /-->
+<!-- // js //-->
+
+<script>
+/*(function($) {
+	$(window).load(function() {			
+		$('#camera').camera({
+			loader				: 'none',
+			fx					: 'simpleFade',			
+			height			: '20%',		
+			autoAdvance : false,	
+			mobileAutoAdvance : false,
+			navigation			: false,
+			navigationHover: true,
+			opacityOnGrid		: false,	
+			overlayer			: false,	
+			pagination			: false,
+			playPause			: false,			
+			pauseOnClick		: false,			
+			portrait			: false, 				
+			time				: 3000,		
+			transPeriod			: 1500,
+			thumbnails: false
+		});			
+	});
+})(jQuery);*/
+</script><script>
+function resizeCamera(){
+	var height = '20%';
+	var h;
+	if(height.indexOf('%') >= 0) h = jQuery('body').outerWidth() * parseFloat(height) / 100;
+	if(height.indexOf('px') >= 0) h = parseFloat(height);
+	jQuery('.camera').css('height', h + "px");
+}
+jQuery(document).ready(resizeCamera);
+jQuery(window).resize(resizeCamera);
+</script>
+
+<header id="xet_header" class="animated">							
+	<div class="xet_logo float_left">
+		<a href="https://lab.bab2min.pe.kr/">
+							ILAB					</a>
+	</div>			
+	<nav class="xet_nav_wrp float_right xet_clearfix">
+		<div class="xet_acc float_right">				
+			<a href="#" id="xet_nav_o" class="hidden_pc visible_tablet" onclick="javascript:return false;">
+				<span class="icon_menu"><i class="xi-align-justify"></i></span>
+				<span class="icon_close"><i class="xi-ban"></i></span>
+			</a>			
+						<a href="#" id="search_o" onclick="javascript:return false;">
+				<span class="icon_menu"><i class="xi-search"></i></span>
+				<span class="icon_close"><i class="xi-ban"></i></span>
+			</a>						
+		</div>		
+		<ul id="" class="xet_nav float_right hidden_tablet">
+			<li>					
+				<a href="https://lab.bab2min.pe.kr/index"><span>홈</span></a>				
+									
+			</li><li>					
+				<a href="https://lab.bab2min.pe.kr/dictionary"><span>사전</span></a>				
+				<ul class="child1">
+					<span class="edge"></span>
+					<li>							
+						<a href="http://latina.bab2min.pe.kr/xe/lk">라틴어 사전</a>							
+											</li><li>							
+						<a href="http://hellas.bab2min.pe.kr/hk">헬라어 사전</a>							
+											</li><li>							
+						<a href="https://lab.bab2min.pe.kr/sk" class="child">스와힐리어 사전</a>							
+						<ul class="child2">
+							<li>
+								<a href="https://lab.bab2min.pe.kr/sk">스-한 사전</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/ks">한-스 사전</a>
+							</li>						</ul>					</li><li>							
+						<a href="https://lab.bab2min.pe.kr/hek" class="child">히브리어 사전</a>							
+						<ul class="child2">
+							<li>
+								<a href="https://lab.bab2min.pe.kr/hek">히-한 사전</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/khe">한-히 사전</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/hebrewCode">히브리어 입력기</a>
+							</li>						</ul>					</li><li>							
+						<a href="https://lab.bab2min.pe.kr/siko" class="child">스리랑카어(싱할라어) 사전</a>							
+						<ul class="child2">
+							<li>
+								<a href="https://lab.bab2min.pe.kr/siko">싱-한 사전</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/kosi">한-싱 사전</a>
+							</li>						</ul>					</li>				</ul>					
+			</li><li>					
+				<a href="/when"><span>언제?</span></a>				
+									
+			</li><li>					
+				<a href="//akorn.bab2min.pe.kr"><span>어듸메</span></a>				
+									
+			</li><li>					
+				<a href="https://lab.bab2min.pe.kr/kiwi" class="on"><span>Kiwi</span></a>				
+				<ul class="child1">
+					<span class="edge"></span>
+					<li>							
+						<a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a>							
+											</li>				</ul>					
+			</li><li>					
+				<a href="https://lab.bab2min.pe.kr/autoTL"><span>개발 실험</span></a>				
+				<ul class="child1">
+					<span class="edge"></span>
+					<li>							
+						<a href="https://lab.bab2min.pe.kr/autoTL">표제어 자동 번역기</a>							
+											</li><li>							
+						<a href="https://lab.bab2min.pe.kr/detectLang">언어 식별기</a>							
+											</li><li>							
+						<a href="https://lab.bab2min.pe.kr/okiwi">초성체 해석기 Ver.2</a>							
+											</li><li>							
+						<a href="https://lab.bab2min.pe.kr/korRelWords">한국어 관련어 사전</a>							
+											</li><li>							
+						<a href="https://lab.bab2min.pe.kr/textRank">TextRank 실험</a>							
+											</li><li>							
+						<a href="https://lab.bab2min.pe.kr/korpuSQLDoc" class="child">KorpuSQL</a>							
+						<ul class="child2">
+							<li>
+								<a href="https://lab.bab2min.pe.kr/korpuSQLDoc">KorpuSQL 소개</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/KorpuSQLWeb">웹용 KorpuSQL</a>
+							</li>						</ul>					</li><li>							
+						<a href="https://lab.bab2min.pe.kr/MorPHP" class="child">MorPHP</a>							
+						<ul class="child2">
+							<li>
+								<a href="https://lab.bab2min.pe.kr/MorPHPRDL">형태 규칙 서술 언어</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/MorPHPExmp">활용 예</a>
+							</li><li>
+								<a href="https://lab.bab2min.pe.kr/MorPHPPreview">미리보기</a>
+							</li>						</ul>					</li><li>							
+						<a href="/civciv">Civciv</a>							
+											</li>				</ul>					
+			</li><li>					
+				<a href="https://lab.bab2min.pe.kr/chronogram"><span>Chrono-gram</span></a>				
+									
+			</li><li>					
+				<a href="https://lab.bab2min.pe.kr/link"><span>링크</span></a>				
+				<ul class="child1">
+					<span class="edge"></span>
+					<li>							
+						<a href="http://latina.bab2min.pe.kr/">살아있는 라틴어</a>							
+											</li><li>							
+						<a href="http://hellas.bab2min.pe.kr/">살아있는 헬라어</a>							
+											</li>				</ul>					
+			</li>	
+		</ul>
+					
+	</nav>			
+</header>
+		
+<div class="xet_section">
+	<div class="camera">
+	</div>    
+</div>	
+	
+	
+	
+<div id="xet_body" class="sub_content_bg">
+	
+	<div class="breadcrumb_wrp xet_mg_b30">
+		<div class="xet_container">
+			<h2 class="float_left"><a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a></h2>
+			<ul class="float_right">
+				<li><a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a></li>				<li><a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a></li>											</ul>
+		</div>
+	</div>	
+	<div class="xet_container">
+				
+		<div class="hidden_pc visible_tablet">
+			<div class="xet_selecter xet_mg_b30">
+				<form action="#" method="GET"><input type="hidden" name="error_return_url" value="/kiwi" /><input type="hidden" name="act" value="" /><input type="hidden" name="mid" value="kiwi" /><input type="hidden" name="vid" value="" />
+					<select name="selecter_links_external">
+											<option value="https://lab.bab2min.pe.kr/kiwi">Kiwi</option>		
+																												<option value="https://lab.bab2min.pe.kr/kiwi" selected="selected">Kiwi</option>																</select>
+				</form>
+			</div>
+		</div>					
+		<div class="xet_clearfix">			
+						
+			
+			<div class="xet_side_wrp side_right hidden_tablet">
+				<div class="xet_side content_equalheight">
+					
+					<div class="xet_lnb_title"><a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a></div>
+					<div class="xet_lnb_wrp">						
+						<ul class="xet_lnb">
+							<li>
+								<a href="https://lab.bab2min.pe.kr/kiwi" class="on">Kiwi</a>								
+															</li>						</ul>					</div>				
+			
+					
+					<div class="xet_side_widget no_border" data-animate="fadeIn">
+												<div class="widget_code">	<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 광고 160x600 -->
+<div class="ads" style="width:160px;margin:2px auto;">
+<ins class="adsbygoogle"
+     style="display:inline-block;width:160px;height:600px"
+     data-ad-client="ca-pub-6659951163871882"
+     data-ad-slot="8583249660"></ins></div>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script></div>					</div>															
+				</div>
+			</div>						
+			
+			<div class="xet_content_wrp">			
+				<div class="xet_content xet_clearfix  sub_content content_equalheight side_right"><h1>Kiwi : 지능형 한국어 형태소 분석기</h1><!--BeforeDocument(281,4)--><div class="document_281_4 xe_content">
+
+<p id="kiwi-logo"><img src="https://lab.bab2min.pe.kr/./files/attach/images/280/281/15324e1e13d09c01f365016fb3462a0f.png" alt="kiwi-logo.png" style="" /></p>
+
+<p>&nbsp;</p>
+
+<h2>개요</h2>
+
+<p>C++기반 한국어 형태소 분석기 Kiwi입니다.&nbsp; 외부 라이브러리 의존 없이 순수 C++로만 작성되어 어떤 환경에서도 사용할 수 있습니다. 사용자가 필요에 따라 사전 내용을 추가할 수 있습니다. 분석기의 성능과 속도에 대해서는 <a href="https://github.com/bab2min/Kiwi" target="_blank">공식 깃헙 저장소</a>를 참조하시길 바랍니다.</p>
+
+<p>&nbsp;</p>
+
+<h2>데모</h2>
+
+<div style="clear:both">
+<div id="query">
+<div class="input"><textarea id="addata" placeholder="형태소 분석할 문장 입력..." rows="3"></textarea></div>
+
+<div class="control">결과 개수: <select id="adTopN"><option value="1">1개</option><option value="2">2개</option><option value="3">3개</option><option value="4">4개</option><option value="5">5개</option> </select><button id="adAnalyze" type="button">형태소 분석</button></div>
+</div>
+
+<div id="result">&nbsp;</div>
+</div>
+<script>
+var timer = null;
+function updateAD() {
+  timer = null;
+  jQuery.get('/kiwi/demo', {q:jQuery('#addata').val(), n:jQuery('#adTopN').val()}, function(out) {
+    var res = '';
+    for(var i in out) {
+        var t = out[i];
+        t = t.join(' + ');
+        res += '<li>' + t + '</li>';
+    }
+    if(res) jQuery("#result").html('<hr><h3>결과</h3><ul>' + res + '</ul>');
+    else jQuery("#result").html('<hr><h3>결과</h3>결과 없음');
+  }).fail(function(){
+    alert('오류 발생');
+    jQuery("#result").html('서버 오류가 발생했습니다.');
+  });
+  jQuery("#result").html('로딩 중...');
+}
+jQuery('#adAnalyze').click(updateAD);
+</script>
+
+<div style="clear:both;">&nbsp;</div>
+
+<h2>링크</h2>
+
+<ul>
+	<li><a href="http://bab2min.tistory.com/560" target="_blank">블로그</a></li>
+	<li><a href="https://github.com/bab2min/Kiwi" target="_blank">https://github.com/bab2min/Kiwi</a></li>
+	<li><a href="https://github.com/bab2min/kiwipiepy" target="_blank">https://github.com/bab2min/kiwipiepy</a> (Python3용 패키지)</li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h2>GUI버전</h2>
+
+<p><img alt="" src="/KiwiGui1.PNG" style="width: 500px; height: 362px;" /></p>
+
+<p><img alt="" src="/KiwiGui2.PNG" style="width: 430px; height: 312px;" /></p>
+
+<p>&nbsp;</p>
+
+<p>Kiwi GUI 버전을 배포합니다. 자세한 내용은&nbsp;<a href="http://bab2min.tistory.com/586">http://bab2min.tistory.com/586</a>를 참조하세요.</p></div><!--AfterDocument(281,4)--></div>
+<script>
+if(jQuery('body').width()<970) {document.write('<div class="ads" style="width:340px;margin:8px auto 0;"><ins class="adsbygoogle" style="display:inline-block;width:336px;height:280px" data-ad-client="ca-pub-6659951163871882" data-ad-slot="8927211309"></ins></div>');
+(adsbygoogle = window.adsbygoogle || []).push({});
+}
+</script>			</div>			
+				
+		</div>
+	</div>
+</div>
+	
+	
+<div id="xet_footer">	
+	<div class="text_center xet_pd_tb60">
+<!-- 반응형 -->
+<div class="ads">
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6659951163871882"
+     data-ad-slot="9262244103"
+     data-ad-format="auto"></ins></div>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>			
+					
+				<div class="xet_mg_b20">
+												<p><i class="xi-email"></i> bab2min@gmail.com</p>							
+		</div>			
+		<ul class="xet_footer_nav xet_mg_b20">
+			<li>
+				<a href="https://lab.bab2min.pe.kr/index">홈</a>
+			</li><li>
+				<a href="https://lab.bab2min.pe.kr/dictionary">사전</a>
+			</li><li>
+				<a href="/when">언제?</a>
+			</li><li>
+				<a href="//akorn.bab2min.pe.kr">어듸메</a>
+			</li><li>
+				<a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a>
+			</li><li>
+				<a href="https://lab.bab2min.pe.kr/autoTL">개발 실험</a>
+			</li><li>
+				<a href="https://lab.bab2min.pe.kr/chronogram">Chrono-gram</a>
+			</li><li>
+				<a href="https://lab.bab2min.pe.kr/link">링크</a>
+			</li>		</ul>				
+		<p class="xet_copyright"></p>
+	</div>	
+</div>
+<div id="xet_acc_layer" class="xet_fulldown text_center">
+	<div class="xet_fulldown_cont">
+		<div class="xet_macc">		
+						<!--<h2 class="h2">LOGIN</h2>	
+			<p><a href="https://lab.bab2min.pe.kr/index.php?mid=kiwi&amp;act=dispMemberLoginForm">로그인</a></p>
+			<p><a href="https://lab.bab2min.pe.kr/index.php?mid=kiwi&amp;act=dispMemberSignUpForm">회원가입</a></p>-->
+					</div>	
+	</div>
+</div>
+<div id="xet_search_layer" class="xet_fulldown text_center">
+	<div class="xet_fulldown_cont">		
+		<h2 class="h2">SEARCH</h2>
+		<form action="https://lab.bab2min.pe.kr/" method="get" class="xet_search_form"><input type="hidden" name="error_return_url" value="/kiwi" />
+						<input type="hidden" name="mid" value="kiwi" />
+			<input type="hidden" name="act" value="IS" />
+			<input type="hidden" name="search_target" value="title_content" />
+			<input name="is_keyword" type="text" class="itext r2" value="" placeholder="입력후 엔터..." spellcheck="true" />
+		</form>	
+	</div>
+</div>
+<div id="xet_mnav_layer" class="xet_fulldown text_center">
+	<div class="xet_fulldown_cont">			
+		<h2 class="h2">MENU NAVIGATION</h2>	
+		<div class="xet_mnav">		
+			<ul>
+				<li>					
+					<a href="https://lab.bab2min.pe.kr/index"><span>홈</span></a>				
+										
+				</li><li>					
+					<a href="https://lab.bab2min.pe.kr/dictionary"><span>사전</span></a>				
+					<ul class="child1">
+						<li>							
+							<a href="http://latina.bab2min.pe.kr/xe/lk">라틴어 사전</a>							
+													</li><li>							
+							<a href="http://hellas.bab2min.pe.kr/hk">헬라어 사전</a>							
+													</li><li>							
+							<a href="https://lab.bab2min.pe.kr/sk" class="child">스와힐리어 사전</a>							
+							<ul class="child2">
+								<li>
+									<a href="https://lab.bab2min.pe.kr/sk">스-한 사전</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/ks">한-스 사전</a>
+								</li>							</ul>						</li><li>							
+							<a href="https://lab.bab2min.pe.kr/hek" class="child">히브리어 사전</a>							
+							<ul class="child2">
+								<li>
+									<a href="https://lab.bab2min.pe.kr/hek">히-한 사전</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/khe">한-히 사전</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/hebrewCode">히브리어 입력기</a>
+								</li>							</ul>						</li><li>							
+							<a href="https://lab.bab2min.pe.kr/siko" class="child">스리랑카어(싱할라어) 사전</a>							
+							<ul class="child2">
+								<li>
+									<a href="https://lab.bab2min.pe.kr/siko">싱-한 사전</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/kosi">한-싱 사전</a>
+								</li>							</ul>						</li>					</ul>					
+				</li><li>					
+					<a href="/when"><span>언제?</span></a>				
+										
+				</li><li>					
+					<a href="//akorn.bab2min.pe.kr"><span>어듸메</span></a>				
+										
+				</li><li>					
+					<a href="https://lab.bab2min.pe.kr/kiwi" class="on"><span>Kiwi</span></a>				
+					<ul class="child1">
+						<li>							
+							<a href="https://lab.bab2min.pe.kr/kiwi">Kiwi</a>							
+													</li>					</ul>					
+				</li><li>					
+					<a href="https://lab.bab2min.pe.kr/autoTL"><span>개발 실험</span></a>				
+					<ul class="child1">
+						<li>							
+							<a href="https://lab.bab2min.pe.kr/autoTL">표제어 자동 번역기</a>							
+													</li><li>							
+							<a href="https://lab.bab2min.pe.kr/detectLang">언어 식별기</a>							
+													</li><li>							
+							<a href="https://lab.bab2min.pe.kr/okiwi">초성체 해석기 Ver.2</a>							
+													</li><li>							
+							<a href="https://lab.bab2min.pe.kr/korRelWords">한국어 관련어 사전</a>							
+													</li><li>							
+							<a href="https://lab.bab2min.pe.kr/textRank">TextRank 실험</a>							
+													</li><li>							
+							<a href="https://lab.bab2min.pe.kr/korpuSQLDoc" class="child">KorpuSQL</a>							
+							<ul class="child2">
+								<li>
+									<a href="https://lab.bab2min.pe.kr/korpuSQLDoc">KorpuSQL 소개</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/KorpuSQLWeb">웹용 KorpuSQL</a>
+								</li>							</ul>						</li><li>							
+							<a href="https://lab.bab2min.pe.kr/MorPHP" class="child">MorPHP</a>							
+							<ul class="child2">
+								<li>
+									<a href="https://lab.bab2min.pe.kr/MorPHPRDL">형태 규칙 서술 언어</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/MorPHPExmp">활용 예</a>
+								</li><li>
+									<a href="https://lab.bab2min.pe.kr/MorPHPPreview">미리보기</a>
+								</li>							</ul>						</li><li>							
+							<a href="/civciv">Civciv</a>							
+													</li>					</ul>					
+				</li><li>					
+					<a href="https://lab.bab2min.pe.kr/chronogram"><span>Chrono-gram</span></a>				
+										
+				</li><li>					
+					<a href="https://lab.bab2min.pe.kr/link"><span>링크</span></a>				
+					<ul class="child1">
+						<li>							
+							<a href="http://latina.bab2min.pe.kr/">살아있는 라틴어</a>							
+													</li><li>							
+							<a href="http://hellas.bab2min.pe.kr/">살아있는 헬라어</a>							
+													</li>					</ul>					
+				</li>	
+			</ul>
+		</div>
+	</div>
+</div>
+<script>
+if(jQuery('body').width()>=640){
+var t = '<div class="ads" style="width:336px;float:right;margin:3px 0 3px 3px;"><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-6659951163871882" data-ad-slot="9262244103" data-ad-format="auto"></ins></div>';
+var u = '<div class="ads"><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-6659951163871882" data-ad-slot="9262244103" data-ad-format="auto"></ins></div>';
+if(jQuery('.wg').length) {jQuery('.wg').first().before(t);}
+else if(jQuery('h1').length && jQuery('.read_body').length == 0 && jQuery('.xe_content').height() >= 300){jQuery('h1').first().after(t);}
+else {jQuery('.xet_content_wrp').prepend(u);}
+(adsbygoogle = window.adsbygoogle || []).push({});
+}
+else {
+jQuery('.xet_content_wrp').prepend('<div class="ads"><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-6659951163871882" data-ad-slot="9262244103" data-ad-format="auto"></ins></div>');
+(adsbygoogle = window.adsbygoogle || []).push({});
+}
+</script>
+<script>
+jQuery('.ads').prepend('<h6>광고</h6>');
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-35651242-6', 'auto');
+  ga('send', 'pageview');
+</script><!-- ETC -->
+<div class="wfsr"></div>
+<script src="/addons/autolink/autolink.js?20180630180341"></script><script src="/common/js/plugins/ui/jquery-ui.min.js?20180630180341"></script><script src="/common/js/plugins/ui/jquery.ui.datepicker-ko.js?20180630180341"></script><script src="/addons/resize_image/js/resize_image.min.js?20180630180341"></script></body>
+</html>

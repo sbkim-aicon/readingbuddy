@@ -1,0 +1,15 @@
+[
+  ".github",
+  "ModelGenerator",
+  "bindings",
+  "docs",
+  "eval_data",
+  "include",
+  "models",
+  "src",
+  "test",
+  "third_party",
+  "tokenizers",
+  "tools",
+  "vsproj"
+]
