@@ -14,7 +14,6 @@
     "@speechify/api": "^1.0.1",
     "clsx": "^2.1.1",
     "fast-xml-parser": "^5.3.7",
-    "kiwi-nlp": "^0.22.1",
     "kuromoji-ko": "^1.0.8",
     "livekit-client": "^2.17.1",
     "lucide-react": "^0.563.0",
