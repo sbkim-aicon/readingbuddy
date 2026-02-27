@@ -1,0 +1,100 @@
+[
+  {
+    "card_id": "astro_explorer",
+    "card_type": "general",
+    "title": "Astro The Explorer AI Companion",
+    "subtitle": "Learn about Space",
+    "cover_image": "https://placehold.co/400x600/3B82F6/FFFFFF/png?text=Astro",
+    "persona_name": "Astro",
+    "prompt_file": "prompts/cards/card_01_astro_explorer.md",
+    "voice_openai": "nova",
+    "temperature": 0.8,
+    "active": true
+  },
+  {
+    "card_id": "riddles_companion",
+    "card_type": "general",
+    "title": "Riddles AI Companion",
+    "subtitle": "Solve Riddles, Learn Facts",
+    "cover_image": "https://placehold.co/400x600/F59E0B/FFFFFF/png?text=Riddles",
+    "persona_name": "Riddles",
+    "prompt_file": "prompts/cards/card_02_riddles_companion.md",
+    "voice_openai": "fable",
+    "temperature": 0.9,
+    "active": true
+  },
+  {
+    "card_id": "word_ladder",
+    "card_type": "general",
+    "title": "Word Ladder AI Game",
+    "subtitle": "Improve Vocabulary",
+    "cover_image": "https://placehold.co/400x600/10B981/FFFFFF/png?text=Word+Ladder",
+    "persona_name": "WordWiz",
+    "prompt_file": "prompts/cards/card_03_word_ladder.md",
+    "voice_openai": "echo",
+    "temperature": 0.7,
+    "active": true
+  },
+  {
+    "card_id": "book1",
+    "card_type": "read_with_me",
+    "title": "이천 원으로 뭘 할까?",
+    "subtitle": "김은파 글 | 박은현 그림",
+    "cover_image": "https://placehold.co/400x600/F97316/FFFFFF/png?text=Reading_Buddy",
+    "persona_name": "Reading Buddy",
+    "prompt_file": null,
+    "book_data_path": "data/books/book1.json",
+    "voice_openai": "nova",
+    "temperature": 0.7,
+    "active": true
+  },
+  {
+    "card_id": "read_with_me_2",
+    "card_type": "read_with_me",
+    "title": "Core Biology Topics",
+    "subtitle": "STEM Learning",
+    "cover_image": "https://placehold.co/400x600/059669/FFFFFF/png?text=Biology",
+    "persona_name": "Reading Buddy",
+    "prompt_file": null,
+    "book_data_path": null,
+    "voice_openai": "shimmer",
+    "temperature": 0.7,
+    "active": true
+  },
+  {
+    "card_id": "mindreader",
+    "card_type": "general",
+    "title": "English Skills Tenses",
+    "subtitle": "Past Present & Future",
+    "cover_image": "https://placehold.co/400x600/3B82F6/FFFFFF/png?text=Tenses",
+    "persona_name": "Mystic",
+    "prompt_file": "prompts/cards/card_06_mindreader.md",
+    "voice_openai": "onyx",
+    "temperature": 0.9,
+    "active": true
+  },
+  {
+    "card_id": "math_battle",
+    "card_type": "general",
+    "title": "Math Battle",
+    "subtitle": "Where numbers and fun meet!",
+    "cover_image": "https://placehold.co/400x600/8B5CF6/FFFFFF/png?text=Math",
+    "persona_name": "MathBot",
+    "prompt_file": "prompts/cards/card_07_math_battle.md",
+    "voice_openai": "alloy",
+    "temperature": 0.7,
+    "active": true
+  },
+  {
+    "card_id": "whats_that_sound",
+    "card_type": "general",
+    "title": "What's That Sound",
+    "subtitle": "Hear it!, Guess it!, Learn it!",
+    "cover_image": "https://placehold.co/400x600/EC4899/FFFFFF/png?text=Sound",
+    "persona_name": "Soundy",
+    "prompt_file": "prompts/cards/card_08_whats_that_sound.md",
+    "voice_openai": "nova",
+    "temperature": 0.9,
+    "active": true
+  }
+]
