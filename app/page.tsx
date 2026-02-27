@@ -4,9 +4,14 @@ import path from "path";
 import { CardConfig } from "@/lib/types";
 
 export default async function Home() {
-  const cardsFilePath = path.join(process.cwd(), "data", "cards.json");
-  const cardsData = await fs.readFile(cardsFilePath, "utf8");
-  const cards: CardConfig[] = JSON.parse(cardsData);
+  let cards: CardConfig[] = [];
+  try {
+    const cardsFilePath = path.join(process.cwd(), "data", "cards.json");
+    const cardsData = await fs.readFile(cardsFilePath, "utf8");
+    cards = JSON.parse(cardsData);
+  } catch (err) {
+    console.error("Failed to load cards.json:", err);
+  }
 
   return (
     <main className="min-h-screen bg-[#F4F6F8] p-6 sm:p-12">
