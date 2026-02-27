@@ -5,9 +5,15 @@ import { CardConfig } from "@/lib/types";
 import SpeakerSession from "@/components/SpeakerSession";
 
 export default async function SpeakerPage({ params }: { params: { cardId: string } }) {
-    const cardsFilePath = path.join(process.cwd(), "data", "cards.json");
-    const cardsData = await fs.readFile(cardsFilePath, "utf8");
-    const cards: CardConfig[] = JSON.parse(cardsData);
+    let cards: CardConfig[] = [];
+    try {
+        const cardsFilePath = path.join(process.cwd(), "data", "cards.json");
+        const cardsData = await fs.readFile(cardsFilePath, "utf8");
+        cards = JSON.parse(cardsData);
+    } catch (err) {
+        console.error("Failed to load cards.json:", err);
+        notFound();
+    }
 
     const cardConfig = cards.find(c => c.card_id === params.cardId);
 

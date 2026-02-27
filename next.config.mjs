@@ -7,7 +7,13 @@ const nextConfig = {
     },
     experimental: {
         outputFileTracingIncludes: {
-            '/*': ['./data/**/*', './prompts/**/*'],
+            '/': ['./data/**/*'],
+            '/admin': ['./data/**/*'],
+            '/speaker/[cardId]': ['./data/**/*', './prompts/**/*'],
+            '/api/chat': ['./data/**/*', './prompts/**/*'],
+            '/api/admin/cards': ['./data/**/*'],
+            '/api/book-data-analyzer': ['./prompts/**/*'],
+            '/api/realtime': [],
         },
     },
 };
