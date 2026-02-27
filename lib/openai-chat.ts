@@ -23,7 +23,7 @@ export async function generateOpenAIChatResponse(
             model: "gpt-4o-mini", // Using gpt-4o-mini for faster prototype responses
             messages: messages,
             temperature: isJsonMode ? 0.2 : 0.8,
-            max_tokens: isJsonMode ? 4096 : 1024,
+            max_tokens: isJsonMode ? 512 : 1024,
             response_format: isJsonMode ? { type: "json_object" } : { type: "text" }
         });
 

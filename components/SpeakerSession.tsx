@@ -12,6 +12,7 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
     const [state, setState] = useState<SpeakerState>("idle");
     const [inputText, setInputText] = useState("");
     const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+    const [isStarted, setIsStarted] = useState(false); // true after user taps start
 
     // Reading session specific state
     const [bookData, setBookData] = useState<BookData | null>(null);
@@ -53,6 +54,7 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         onError: (err) => {
             console.error(err);
             setState("error");
+            setIsStarted(false); // Return to start screen on error
             setTimeout(() => setState("idle"), 2000);
         }
     });
@@ -76,11 +78,20 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         }
     };
 
+    // Entry point — user taps the start button (user gesture required for mic + audio unlock)
+    const handleStart = () => {
+        initTTSAudio();
+        setIsStarted(true);
+        connect();
+    };
+
     const handleMicToggle = () => {
-        initTTSAudio(); // Unlock audio on first user gesture
         if (isConnected) {
             disconnect();
+            setIsStarted(false);
         } else {
+            initTTSAudio();
+            setIsStarted(true);
             connect();
         }
     };
@@ -168,17 +179,28 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
             if (!response.ok) throw new Error('API Error');
 
             const data = await response.json();
-            setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
 
-            if (data.audio_url) {
-                await playAudioString(data.audio_url);
-            } else {
-                setState("idle");
-            }
+            // Show text immediately — don't wait for TTS
+            setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
 
             // Update session state locally if returned by the backend
             if (data.session_state) {
                 setSessionState(prev => prev ? { ...prev, ...data.session_state } : data.session_state);
+            }
+
+            // Fetch TTS in background; play when ready
+            if (ttsAudioRef.current && data.response) {
+                setState("speaking");
+                fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: data.response, voice: data.voice })
+                })
+                    .then(r => r.json())
+                    .then(tts => { if (tts.audio_url) playAudioString(tts.audio_url); else setState("idle"); })
+                    .catch(() => setState("idle"));
+            } else {
+                setState("idle");
             }
 
         } catch (e) {
@@ -222,26 +244,54 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
     }, [sessionState, isConnected, bookData, cardConfig.card_type, updateContext]);
 
 
-    // Trigger initial greeting on mount
+    // Greeting via Realtime API — fires once WebRTC is first connected
     const hasGreeted = useRef(false);
     useEffect(() => {
-        // Delay greeting until book is loaded for read_with_me cards
+        if (!isConnected || hasGreeted.current) return;
         if (cardConfig.card_type === 'read_with_me' && !bookData) return;
 
-        if (!hasGreeted.current && !isConnected) {
-            hasGreeted.current = true;
-            // Introduce yourself first by sending a hidden background prompt
-            const greetingMsg = cardConfig.card_type === 'read_with_me'
-                ? "우리 이제 책 읽을 시간이야! 짧게 단문으로 신나게 첫인사를 건네줘."
-                : "사용자가 처음 들어왔어. 대기 시간을 줄이기 위해 1~2초 이내로 끝날 수 있는 아주 짧고 활기찬 첫 인사를 딱 한 문장으로만 해줘.";
+        hasGreeted.current = true;
+        const greetingMsg = cardConfig.card_type === 'read_with_me'
+            ? "우리 이제 책 읽을 시간이야! 짧게 단문으로 신나게 첫인사를 건네줘."
+            : "사용자가 처음 들어왔어. 대기 시간을 줄이기 위해 1~2초 이내로 끝날 수 있는 아주 짧고 활기찬 첫 인사를 딱 한 문장으로만 해줘.";
 
-            handleSubmit(undefined, greetingMsg);
-        }
+        sendTextMessage(greetingMsg);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bookData, cardConfig, isConnected]);
+    }, [isConnected, bookData]);
 
     return (
         <div className="relative flex flex-col h-full w-full min-h-screen bg-white overflow-hidden">
+
+            {/* Start Overlay — shown until user taps to begin (required for getUserMedia on mobile) */}
+            {!isStarted && (
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white px-8">
+                    <div className="flex flex-col items-center gap-8 w-full max-w-sm">
+                        <div className="text-center">
+                            <p className="text-3xl font-bold text-gray-900">{cardConfig.persona_name}</p>
+                            <p className="text-gray-500 mt-2 text-lg">{cardConfig.subtitle || cardConfig.title}</p>
+                        </div>
+
+                        <button
+                            onClick={handleStart}
+                            className="w-44 h-44 rounded-full bg-blue-500 text-white flex flex-col items-center justify-center gap-3 shadow-2xl active:scale-95 transition-transform hover:bg-blue-600 select-none"
+                        >
+                            <Mic className="w-16 h-16" />
+                            <span className="text-xl font-bold">시작하기</span>
+                        </button>
+
+                        {state === "error" && (
+                            <p className="text-red-500 text-center text-sm">
+                                마이크 연결에 실패했습니다.<br/>브라우저 마이크 권한을 확인해주세요.
+                            </p>
+                        )}
+
+                        <p className="text-gray-400 text-sm text-center leading-relaxed">
+                            버튼을 누르면 마이크가 켜지고<br/>AI와 실시간 음성 대화가 시작됩니다.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Top Bar Navigation */}
             <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10">
                 <button
@@ -255,6 +305,7 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
                 <div className="flex flex-col items-center absolute left-1/2 -translate-x-1/2">
                     <div className="text-center font-bold text-[#333333] text-xl flex items-center gap-2">
                         {cardConfig.persona_name}
+                        {isConnecting && <Loader2 className="w-4 h-4 animate-spin text-blue-400" />}
                         {isConnected && <span className="flex w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>}
                     </div>
                     {sessionState && (

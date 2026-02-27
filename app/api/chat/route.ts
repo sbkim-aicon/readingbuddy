@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOpenAIChatResponse } from "@/lib/openai-chat";
-import { generateTTS } from "@/lib/openai-tts";
 import fs from "fs/promises";
 import path from "path";
 
@@ -43,14 +42,21 @@ export async function POST(req: NextRequest) {
                 systemPrompt = template;
             }
 
-            // Provide full book context and current session state as structured data
+            // Provide only current page data (not full book) to minimize token usage
+            const currentPage = bookData.pages?.[currentPageIndex] ?? null;
+            const nextPage = bookData.pages?.[currentPageIndex + 1] ?? null;
+            const trimmedBookContext = {
+                book_metadata: bookData.book_metadata,
+                current_page: currentPage,
+                ...(nextPage ? { next_page: nextPage } : {}),
+            };
             systemPrompt += `\n\n[SESSION_CONTEXT]
 Current Phase: ${phase}
 Current Page Index: ${currentPageIndex}
 Total Pages: ${bookData.book_metadata.total_pages}
 
-[FULL_BOOK_DATA]
-${JSON.stringify(bookData, null, 2)}
+[BOOK_DATA]
+${JSON.stringify(trimmedBookContext, null, 2)}
 
 [RESPONSE FORMAT INSTRUCTIONS]
 You must respond in strict JSON format. Do NOT wrap it in markdown block quotes. Use the following schema:
@@ -101,24 +107,10 @@ TotalPages: ${bookData.book_metadata.total_pages}
             }
         }
 
-        let audioBase64 = null;
-        try {
-            // 3. Optional: Generate TTS Audio for the response
-            // Sanitize text for TTS: Remove square bracket tags and extra symbols
-            const sanitizedText = aiResponseText
-                .replace(/\[.*?\]/g, "") // Strip [tags]
-                .replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ.,!?]/g, "") // Keep only letters, spaces, and basic punctuation
-                .trim();
-
-            const audioBuffer = await generateTTS(sanitizedText, cardConfig.voice_openai);
-            audioBase64 = `data:audio/mp3;base64,${audioBuffer.toString('base64')}`;
-        } catch (ttsErr) {
-            console.error("TTS generation failed, returning text only.", ttsErr);
-        }
-
+        // TTS is generated separately by the client via /api/tts to return text immediately
         return NextResponse.json({
             response: aiResponseText,
-            audio_url: audioBase64,
+            voice: cardConfig.voice_openai || "alloy",
             ...(newSessionState && { session_state: newSessionState })
         });
 
