@@ -64,6 +64,14 @@ export function useRealtimeVoice({
             const pc = new RTCPeerConnection();
             pcRef.current = pc;
 
+            // Detect ICE/DTLS failures so we can surface an error instead of hanging
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'failed') {
+                    setIsConnecting(false);
+                    if (onError) onError(new Error("WebRTC connection failed — check network or mic permissions"));
+                }
+            };
+
             // Create Audio Element for AI output and append to DOM
             const audioEl = document.createElement("audio");
             audioEl.autoplay = true;
@@ -89,17 +97,18 @@ export function useRealtimeVoice({
             // channel readyState is still "connecting" at that point. Sending a message
             // there would silently fail (the channel drops messages when not open).
             dc.addEventListener("open", () => {
-                // Send VAD + noise-reduction config immediately on open
+                // Match the VAD settings from session creation and enable noise reduction.
+                // (session.update is needed because the sessions API doesn't expose
+                //  input_audio_noise_reduction at creation time.)
                 dc.send(JSON.stringify({
                     type: 'session.update',
                     session: {
                         turn_detection: {
                             type: "server_vad",
-                            threshold: 0.5,
+                            threshold: 0.6,
                             prefix_padding_ms: 300,
-                            silence_duration_ms: 600,
+                            silence_duration_ms: 1200,
                             create_response: true,
-                            interrupt_response: true,
                         },
                         input_audio_noise_reduction: { type: "near_field" },
                     }
