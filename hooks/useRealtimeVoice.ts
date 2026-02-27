@@ -59,17 +59,18 @@ export function useRealtimeVoice({
             pcRef.current = pc;
 
             // Create Audio Element for AI output and append to DOM
-            // (Required for reliable autoplay in Safari and some Chromium browsers)
             const audioEl = document.createElement("audio");
             audioEl.autoplay = true;
+            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
             audioEl.style.display = "none";
             document.body.appendChild(audioEl);
             audioElRef.current = audioEl;
 
             pc.ontrack = (e) => {
                 if (e.track.kind === 'audio') {
-                    console.log("Audio track received from OpenAI");
                     audioEl.srcObject = e.streams[0];
+                    // Explicit play() required on iOS Safari — autoplay alone is not enough
+                    audioEl.play().catch(err => console.warn("WebRTC audio play failed:", err));
                     if (onAudioStarted) onAudioStarted();
                 }
             };
@@ -112,12 +113,18 @@ export function useRealtimeVoice({
 
             // 4. Capture local microphone audio and add to Peer Connection
             try {
-                const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
-                ms.getTracks().forEach((track) => {
-                    pc.addTrack(track, ms);
+                const ms = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,   // Reduces speaker feedback on mobile
+                        noiseSuppression: true,   // Filters background noise
+                        autoGainControl: true,    // Normalizes mic volume
+                    }
                 });
+                ms.getTracks().forEach((track) => pc.addTrack(track, ms));
             } catch (err) {
                 console.warn("Microphone access denied or not available", err);
+                if (onError) onError(new Error("마이크 접근 권한이 필요합니다. 브라우저 설정에서 마이크를 허용해주세요."));
+                throw err; // Abort connection — no mic means no voice session
             }
 
             // 5. Create Offer and Send it to OpenAI WebRTC Endpoint
