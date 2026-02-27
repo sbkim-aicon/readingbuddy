@@ -168,17 +168,28 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
             if (!response.ok) throw new Error('API Error');
 
             const data = await response.json();
-            setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
 
-            if (data.audio_url) {
-                await playAudioString(data.audio_url);
-            } else {
-                setState("idle");
-            }
+            // Show text immediately — don't wait for TTS
+            setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
 
             // Update session state locally if returned by the backend
             if (data.session_state) {
                 setSessionState(prev => prev ? { ...prev, ...data.session_state } : data.session_state);
+            }
+
+            // Fetch TTS in background; play when ready
+            if (ttsAudioRef.current && data.response) {
+                setState("speaking");
+                fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: data.response, voice: data.voice })
+                })
+                    .then(r => r.json())
+                    .then(tts => { if (tts.audio_url) playAudioString(tts.audio_url); else setState("idle"); })
+                    .catch(() => setState("idle"));
+            } else {
+                setState("idle");
             }
 
         } catch (e) {
