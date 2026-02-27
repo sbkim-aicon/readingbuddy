@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
 
             let promptPath = "";
             if (phase === 'PRE') {
-                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "prompt_02_pre_reading.md");
+                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 02 pre reading.md");
             } else if (phase === 'DURING_DIALOGIC') {
-                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "prompt_03_during_dialogic.md");
+                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 03 during dialogic.md");
             } else if (phase === 'POST') {
-                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "prompt_05_post_reading.md");
+                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 05 post reading.md");
             }
 
             if (promptPath) {

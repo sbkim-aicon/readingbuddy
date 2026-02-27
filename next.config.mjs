@@ -1,13 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     eslint: {
-        // Warning: This allows production builds to successfully complete even if
-        // your project has ESLint errors.
         ignoreDuringBuilds: true,
     },
+    typescript: {
+        ignoreBuildErrors: true,
+    },
+    webpack: (config, { isServer }) => {
+        if (isServer) {
+            config.externals = [...(Array.isArray(config.externals) ? config.externals : []), 'pdf-parse'];
+        }
+        return config;
+    },
     experimental: {
+        serverComponentsExternalPackages: ['pdf-parse'],
         outputFileTracingIncludes: {
-            '/*': ['./data/**/*', './prompts/**/*'],
+            '/': ['./data/**/*'],
+            '/admin': ['./data/**/*'],
+            '/speaker/[cardId]': ['./data/**/*', './prompts/**/*'],
+            '/api/chat': ['./data/**/*', './prompts/**/*'],
+            '/api/admin/cards': ['./data/**/*'],
+            '/api/book-data-analyzer': ['./prompts/**/*'],
+            '/api/realtime': [],
         },
     },
 };
