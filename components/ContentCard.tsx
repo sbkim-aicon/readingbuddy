@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from 'next/link';
 import { CardConfig } from '@/lib/types';
 import { Play } from 'lucide-react';

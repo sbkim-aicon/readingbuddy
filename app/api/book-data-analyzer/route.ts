@@ -12,6 +12,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
     console.log("Analyze Book API hit");
     // Lazy load pdf-parse inside the function to avoid dev server registration issues
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const pdf = require("pdf-parse");
     const PROMPT_PATH = path.join(process.cwd(), "prompts", "read_with_me", "prompt_01_book_analyzer.md");
 

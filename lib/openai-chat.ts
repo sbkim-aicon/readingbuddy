@@ -7,10 +7,12 @@ const openai = new OpenAI({
 export async function generateOpenAIChatResponse(
     systemPrompt: string,
     userMessage: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     chatHistory: any[] = [],
     isJsonMode: boolean = false
 ) {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const messages: any[] = [
             { role: "system", content: systemPrompt },
             ...chatHistory,

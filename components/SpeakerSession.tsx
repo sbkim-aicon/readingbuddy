@@ -98,6 +98,7 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
     const playAudioString = async (base64Audio: string) => {
         try {
             if (!audioContextRef.current) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
             }
 

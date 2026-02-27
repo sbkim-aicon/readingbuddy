@@ -1,0 +1,95 @@
+﻿
+> new_app@0.1.0 build
+> next build
+
+  ??Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ??Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+위치 C:\Program Files\nodejs\npm
+.ps1:29 문자:3
++   & $NODE_EXE $NPM_CLI_JS $a
+rgs
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : 
+    NotSpecified: (:String)   
+  [], RemoteException
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+Failed to compile.
+
+./app/api/book-data-analyzer/r
+oute.ts
+15:17  Error: A `require()` st
+yle import is forbidden.  @typ
+escript-eslint/no-require-impo
+rts
+
+./app/api/realtime/route.ts
+6:17  Error: 'card_id' is assi
+gned a value but never used.  
+@typescript-eslint/no-unused-v
+ars
+39:21  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+
+./components/ContentCard.tsx
+1:8  Error: 'Image' is defined
+ but never used.  @typescript-
+eslint/no-unused-vars
+
+./components/SpeakerSession.ts
+x
+101:82  Error: Unexpected any.
+ Specify a different type.  @t
+ypescript-eslint/no-explicit-a
+ny
+
+./lib/openai-chat.ts
+10:18  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+14:25  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+
+./lib/types.ts
+29:18  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+37:19  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+38:20  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+39:17  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+45:16  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+47:17  Error: Unexpected any. 
+Specify a different type.  @ty
+pescript-eslint/no-explicit-an
+y
+
+info  - Need to disable some E
+SLint rules? Learn more here: 
+https://nextjs.org/docs/basic-
+features/eslint#disabling-rule
+s

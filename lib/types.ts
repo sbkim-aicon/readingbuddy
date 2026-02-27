@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export interface CardConfig {
   card_id: string;
   card_type: "general" | "read_with_me";

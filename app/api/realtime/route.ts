@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { card_id, system_prompt, voice_openai, temperature } = body;
+        const { system_prompt, voice_openai, temperature } = body;
 
         // Fetch a WebRTC Ephemeral Token from OpenAI Realtime API
         // https://platform.openai.com/docs/guides/realtime-webrtc
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
         const data = await response.json();
         return NextResponse.json(data);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Realtime API Token Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
     }
 }
