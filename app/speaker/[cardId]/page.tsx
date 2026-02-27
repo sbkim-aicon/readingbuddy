@@ -21,6 +21,17 @@ export default async function SpeakerPage({ params }: { params: { cardId: string
         notFound();
     }
 
+    // Load the prompt file content so the client receives a ready-to-use system_prompt.
+    // (cards.json stores a path, not the content — the client can't read the filesystem.)
+    if (cardConfig.prompt_file) {
+        try {
+            const promptPath = path.join(process.cwd(), cardConfig.prompt_file);
+            cardConfig.system_prompt = await fs.readFile(promptPath, "utf8");
+        } catch (err) {
+            console.error("Failed to load prompt file:", cardConfig.prompt_file, err);
+        }
+    }
+
     return (
         <main className="min-h-screen bg-[#F4F6F8] flex flex-col h-screen overflow-hidden">
             <SpeakerSession cardConfig={cardConfig} />
