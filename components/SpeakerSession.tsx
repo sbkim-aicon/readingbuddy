@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Send, X, Mic, MicOff, Loader2 } from "lucide-react";
 import { CardConfig, BookData, ReadingSessionState } from "@/lib/types";
@@ -77,6 +77,7 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
     };
 
     const handleMicToggle = () => {
+        initTTSAudio(); // Unlock audio on first user gesture
         if (isConnected) {
             disconnect();
         } else {
@@ -85,52 +86,48 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
     };
 
 
-    // TEXT FALLBACK API
-    const audioContextRef = useRef<AudioContext | null>(null);
+    // TEXT FALLBACK API — uses <audio> element for cross-browser compatibility
+    const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         return () => {
-            audioContextRef.current?.close();
+            ttsAudioRef.current?.pause();
+            ttsAudioRef.current?.remove();
+            ttsAudioRef.current = null;
             disconnect();
         };
     }, [disconnect]);
 
+    // Must be called during a user gesture to unlock audio playback policy
+    const initTTSAudio = useCallback(() => {
+        if (!ttsAudioRef.current) {
+            const el = document.createElement('audio');
+            el.style.display = 'none';
+            document.body.appendChild(el);
+            ttsAudioRef.current = el;
+        }
+    }, []);
+
     const playAudioString = async (base64Audio: string) => {
+        const audio = ttsAudioRef.current;
+        if (!audio) {
+            // Not yet unlocked (e.g. auto-greeting before any user gesture) — skip silently
+            setState("idle");
+            return;
+        }
         try {
-            if (!audioContextRef.current) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-            }
-
-            // Resume AudioContext in case browser suspended it due to autoplay policy
-            if (audioContextRef.current.state === 'suspended') {
-                await audioContextRef.current.resume();
-            }
-
-            const audioString = base64Audio.split(',')[1] || base64Audio;
-            const binaryString = window.atob(audioString);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-
-            const audioBuffer = await audioContextRef.current.decodeAudioData(bytes.buffer);
-            const source = audioContextRef.current.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioContextRef.current.destination);
-
-            source.onended = () => {
-                setState(isConnected ? "listening" : "idle");
-            };
-
+            audio.src = base64Audio;
             setState("speaking");
-            source.start(0);
-
+            audio.onended = () => setState(isConnected ? "listening" : "idle");
+            audio.onerror = () => {
+                console.error("TTS audio element error");
+                setState("error");
+                setTimeout(() => setState(isConnected ? "listening" : "idle"), 2000);
+            };
+            await audio.play();
         } catch (e) {
             console.error("Audio playback failed", e);
-            setState("error");
-            setTimeout(() => setState(isConnected ? "listening" : "idle"), 2000);
+            setState("idle");
         }
     };
 
@@ -142,6 +139,7 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
 
         // Only add user message to history if it's a visible user input
         if (customMessage === undefined) {
+            initTTSAudio(); // Unlock audio on user gesture (before any await)
             setMessages(prev => [...prev, { role: 'user', content: messageToSend }]);
             setInputText("");
         }
