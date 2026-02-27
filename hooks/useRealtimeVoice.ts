@@ -26,6 +26,7 @@ export function useRealtimeVoice({
     const [isConnecting, setIsConnecting] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
+    const [micError, setMicError] = useState<string | null>(null);
 
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const dcRef = useRef<RTCDataChannel | null>(null);
@@ -113,6 +114,7 @@ export function useRealtimeVoice({
 
             // 4. Capture local microphone audio and add to Peer Connection
             try {
+                setMicError(null);
                 const ms = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: true,   // Reduces speaker feedback on mobile
@@ -121,10 +123,13 @@ export function useRealtimeVoice({
                     }
                 });
                 ms.getTracks().forEach((track) => pc.addTrack(track, ms));
-            } catch (err) {
+            } catch (err: any) {
+                // Mic denied — continue anyway (text input + AI voice output still work)
                 console.warn("Microphone access denied or not available", err);
-                if (onError) onError(new Error("마이크 접근 권한이 필요합니다. 브라우저 설정에서 마이크를 허용해주세요."));
-                throw err; // Abort connection — no mic means no voice session
+                const msg = err?.name === "NotAllowedError"
+                    ? "마이크 권한이 거부됐어요. 브라우저 주소창 옆 자물쇠 아이콘에서 마이크를 허용해주세요."
+                    : "마이크를 사용할 수 없어요. 텍스트로 대화할 수 있습니다.";
+                setMicError(msg);
             }
 
             // 5. Create Offer and Send it to OpenAI WebRTC Endpoint
@@ -232,6 +237,7 @@ export function useRealtimeVoice({
         updateContext,
         isConnecting,
         isConnected,
-        isThinking
+        isThinking,
+        micError
     };
 }

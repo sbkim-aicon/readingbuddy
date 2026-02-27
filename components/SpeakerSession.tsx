@@ -43,7 +43,8 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         updateContext,
         isConnecting,
         isConnected,
-        isThinking: isVoiceThinking
+        isThinking: isVoiceThinking,
+        micError
     } = useRealtimeVoice({
         cardId: cardConfig.card_id,
         systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.", // Simplified for now. Will pass full prompt later.
@@ -329,7 +330,13 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
             {/* Bottom Overlay Area: Chat & Input */}
             <div className="z-10 w-full max-w-3xl mx-auto px-4 pb-8 flex flex-col gap-4">
 
-                {/* Chat History bubbles removed as per screen-free voice UI design */}
+                {/* Mic permission warning — non-fatal, text input still works */}
+                {micError && (
+                    <div className="flex items-start gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm">
+                        <MicOff className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>{micError}</span>
+                    </div>
+                )}
 
                 {/* Input Form Box */}
                 <form onSubmit={handleSubmit} className="flex gap-3 bg-white p-3 md:p-4 rounded-3xl shadow-lg border border-gray-100 items-center">
