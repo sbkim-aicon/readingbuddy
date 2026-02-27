@@ -43,14 +43,16 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         updateContext,
         isConnecting,
         isConnected,
-        isThinking: isVoiceThinking
+        isThinking: isVoiceThinking,
+        micError
     } = useRealtimeVoice({
         cardId: cardConfig.card_id,
-        systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.", // Simplified for now. Will pass full prompt later.
+        systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.",
         voice: cardConfig.voice_openai || "alloy",
         temperature: cardConfig.temperature || 0.8,
         onAudioStarted: () => setState("speaking"),
-        onAudioEnded: () => setState(isConnected ? "listening" : "idle"),
+        onAudioEnded: () => setState("listening"),
+        onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
         onError: (err) => {
             console.error(err);
             setState("error");
@@ -59,16 +61,18 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         }
     });
 
-    // Update global state based on WebRTC state
+    // Sync character animation with voice state.
+    // NOTE: 'state' is intentionally NOT in deps to avoid infinite loops —
+    // we use functional setState to guard against stale reads.
     useEffect(() => {
         if (isVoiceThinking) {
             setState("thinking");
-        } else if (isConnected && state !== "speaking") {
-            setState("listening"); // Default to listening when connected
-        } else if (!isConnected && state !== "speaking" && state !== "error") {
-            setState("idle");
+        } else if (isConnected) {
+            setState(prev => (prev === "speaking" || prev === "thinking") ? prev : "listening");
+        } else {
+            setState(prev => (prev === "speaking" || prev === "error") ? prev : "idle");
         }
-    }, [isVoiceThinking, isConnected, state]);
+    }, [isVoiceThinking, isConnected]);
 
 
     const handleEndSession = () => {
@@ -329,7 +333,13 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
             {/* Bottom Overlay Area: Chat & Input */}
             <div className="z-10 w-full max-w-3xl mx-auto px-4 pb-8 flex flex-col gap-4">
 
-                {/* Chat History bubbles removed as per screen-free voice UI design */}
+                {/* Mic permission warning — non-fatal, text input still works */}
+                {micError && (
+                    <div className="flex items-start gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm">
+                        <MicOff className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>{micError}</span>
+                    </div>
+                )}
 
                 {/* Input Form Box */}
                 <form onSubmit={handleSubmit} className="flex gap-3 bg-white p-3 md:p-4 rounded-3xl shadow-lg border border-gray-100 items-center">
