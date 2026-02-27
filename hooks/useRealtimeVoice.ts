@@ -10,6 +10,7 @@ interface UseRealtimeVoiceProps {
     onTextDelta?: (text: string) => void;
     onAudioStarted?: () => void;
     onAudioEnded?: () => void;
+    onUserSpeaking?: (isSpeaking: boolean) => void;
     onError?: (error: Error) => void;
 }
 
@@ -21,6 +22,7 @@ export function useRealtimeVoice({
     onTextDelta,
     onAudioStarted,
     onAudioEnded,
+    onUserSpeaking,
     onError
 }: UseRealtimeVoiceProps) {
     const [isConnecting, setIsConnecting] = useState(false);
@@ -31,11 +33,14 @@ export function useRealtimeVoice({
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const dcRef = useRef<RTCDataChannel | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
+    // Tracks whether AI audio is currently streaming (resets per response)
+    const audioActiveRef = useRef(false);
+    // Timer to delay onAudioEnded so buffered audio can finish playing
+    const responseEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const connect = useCallback(async () => {
         if (isConnected || isConnecting) return;
         setIsConnecting(true);
-        console.log("Connecting to OpenAI Realtime WebRTC API...");
 
         try {
             // 1. Get an ephemeral session token from our Next.js backend
@@ -72,39 +77,91 @@ export function useRealtimeVoice({
                     audioEl.srcObject = e.streams[0];
                     // Explicit play() required on iOS Safari — autoplay alone is not enough
                     audioEl.play().catch(err => console.warn("WebRTC audio play failed:", err));
-                    if (onAudioStarted) onAudioStarted();
                 }
             };
 
-            audioEl.onended = () => {
-                if (onAudioEnded) onAudioEnded();
-            };
-            audioEl.onpause = () => {
-                if (onAudioEnded) onAudioEnded();
-            };
-
-            // 3. Open Data Channel for sending events (like JSON instructions)
+            // 3. Open Data Channel for sending events
             const dc = pc.createDataChannel("oai-events");
             dcRef.current = dc;
+
+            // CRITICAL: only declare "connected" once the data channel is actually open.
+            // setRemoteDescription() completes before ICE+DTLS finishes, so the data
+            // channel readyState is still "connecting" at that point. Sending a message
+            // there would silently fail (the channel drops messages when not open).
+            dc.addEventListener("open", () => {
+                // Send VAD + noise-reduction config immediately on open
+                dc.send(JSON.stringify({
+                    type: 'session.update',
+                    session: {
+                        turn_detection: {
+                            type: "server_vad",
+                            threshold: 0.5,
+                            prefix_padding_ms: 300,
+                            silence_duration_ms: 600,
+                            create_response: true,
+                            interrupt_response: true,
+                        },
+                        input_audio_noise_reduction: { type: "near_field" },
+                    }
+                }));
+
+                setIsConnected(true);
+                setIsConnecting(false);
+                console.log("WebRTC data channel open — session ready.");
+            });
 
             dc.addEventListener("message", (e) => {
                 try {
                     const event = JSON.parse(e.data);
 
-                    // console.log("Realtime Event:", event.type); // Optional Debugging
+                    // User voice activity
+                    if (event.type === 'input_audio_buffer.speech_started') {
+                        // Cancel any pending end-of-response timer (AI was interrupted)
+                        if (responseEndTimerRef.current) {
+                            clearTimeout(responseEndTimerRef.current);
+                            responseEndTimerRef.current = null;
+                        }
+                        if (onUserSpeaking) onUserSpeaking(true);
+                    }
+                    if (event.type === 'input_audio_buffer.speech_stopped') {
+                        if (onUserSpeaking) onUserSpeaking(false);
+                        setIsThinking(true);
+                    }
+
+                    // AI response lifecycle
+                    if (event.type === 'response.created') {
+                        audioActiveRef.current = false; // reset for new response
+                        if (responseEndTimerRef.current) {
+                            clearTimeout(responseEndTimerRef.current);
+                            responseEndTimerRef.current = null;
+                        }
+                        setIsThinking(true);
+                    }
+
+                    // First audio chunk of a response → AI started speaking
+                    if (event.type === 'response.audio.delta') {
+                        if (!audioActiveRef.current) {
+                            audioActiveRef.current = true;
+                            setIsThinking(false);
+                            if (onAudioStarted) onAudioStarted();
+                        }
+                    }
 
                     if (event.type === 'response.audio_transcript.delta' && onTextDelta) {
                         onTextDelta(event.delta);
                     }
-                    if (event.type === 'response.created' || event.type === 'response.content_part.added') {
-                        setIsThinking(true);
+
+                    // Response fully generated — wait a bit for buffered audio to finish
+                    if (event.type === 'response.done') {
+                        responseEndTimerRef.current = setTimeout(() => {
+                            audioActiveRef.current = false;
+                            setIsThinking(false);
+                            if (onAudioEnded) onAudioEnded();
+                        }, 400);
                     }
-                    if (event.type === 'response.done' || event.type === 'response.output_item.done') {
-                        setIsThinking(false);
-                        if (onAudioEnded) onAudioEnded(); // Ensure UI returns to listening
-                    }
+
                     if (event.type === 'error') {
-                        console.error("OpenAI WebSocket Error:", event.error);
+                        console.error("OpenAI Realtime Error:", event.error);
                         if (onError) onError(new Error(event.error.message));
                     }
                 } catch (err) {
@@ -112,19 +169,19 @@ export function useRealtimeVoice({
                 }
             });
 
-            // 4. Capture local microphone audio and add to Peer Connection
+            // 4. Capture local microphone audio
             try {
                 setMicError(null);
                 const ms = await navigator.mediaDevices.getUserMedia({
                     audio: {
-                        echoCancellation: true,   // Reduces speaker feedback on mobile
-                        noiseSuppression: true,   // Filters background noise
-                        autoGainControl: true,    // Normalizes mic volume
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
                     }
                 });
                 ms.getTracks().forEach((track) => pc.addTrack(track, ms));
             } catch (err: any) {
-                // Mic denied — continue anyway (text input + AI voice output still work)
+                // Mic denied — continue; text input + AI voice output still work
                 console.warn("Microphone access denied or not available", err);
                 const msg = err?.name === "NotAllowedError"
                     ? "마이크 권한이 거부됐어요. 브라우저 주소창 옆 자물쇠 아이콘에서 마이크를 허용해주세요."
@@ -158,22 +215,26 @@ export function useRealtimeVoice({
                 sdp: await sdpResponse.text(),
             };
 
+            // ICE + DTLS negotiation happens in the background after this.
+            // setIsConnected(true) will be called from dc.onopen once the
+            // data channel is actually ready to send.
             await pc.setRemoteDescription(answer);
-
-            setIsConnected(true);
-            setIsConnecting(false);
-            console.log("WebRTC Connected successfully.");
 
         } catch (error: any) {
             console.error("Failed to connect to Realtime API", error);
             setIsConnecting(false);
             if (onError) onError(error);
         }
-    }, [cardId, systemPrompt, voice, temperature, isConnected, isConnecting, onAudioStarted, onAudioEnded, onTextDelta, onError]);
+    }, [cardId, systemPrompt, voice, temperature, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError]);
 
 
     const disconnect = useCallback(() => {
-        console.log("Disconnecting WebRTC...");
+        if (responseEndTimerRef.current) {
+            clearTimeout(responseEndTimerRef.current);
+            responseEndTimerRef.current = null;
+        }
+        audioActiveRef.current = false;
+
         if (pcRef.current) {
             pcRef.current.close();
             pcRef.current = null;
@@ -191,38 +252,26 @@ export function useRealtimeVoice({
         setIsThinking(false);
     }, []);
 
-    // Send a message over the data channel (e.g., text, or to trigger a state change)
     const sendMessage = useCallback((type: string, payload: any = {}) => {
         if (!dcRef.current || dcRef.current.readyState !== "open") {
             console.warn("Data channel not open. Cannot send:", type);
             return;
         }
-        const event = {
-            type,
-            ...payload
-        };
-        dcRef.current.send(JSON.stringify(event));
+        dcRef.current.send(JSON.stringify({ type, ...payload }));
     }, []);
 
     const updateContext = useCallback((newPrompt: string) => {
-        // Update the session instructions live while connected
         sendMessage('session.update', {
-            session: {
-                instructions: newPrompt
-            }
+            session: { instructions: newPrompt }
         });
     }, [sendMessage]);
 
-
     const sendTextMessage = useCallback((text: string) => {
-        // Send user text message and trigger a response
         sendMessage('conversation.item.create', {
             item: {
                 type: "message",
                 role: "user",
-                content: [
-                    { type: "input_text", text }
-                ]
+                content: [{ type: "input_text", text }]
             }
         });
         sendMessage('response.create');

@@ -47,11 +47,12 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         micError
     } = useRealtimeVoice({
         cardId: cardConfig.card_id,
-        systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.", // Simplified for now. Will pass full prompt later.
+        systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.",
         voice: cardConfig.voice_openai || "alloy",
         temperature: cardConfig.temperature || 0.8,
         onAudioStarted: () => setState("speaking"),
-        onAudioEnded: () => setState(isConnected ? "listening" : "idle"),
+        onAudioEnded: () => setState("listening"),
+        onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
         onError: (err) => {
             console.error(err);
             setState("error");
@@ -60,16 +61,18 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
         }
     });
 
-    // Update global state based on WebRTC state
+    // Sync character animation with voice state.
+    // NOTE: 'state' is intentionally NOT in deps to avoid infinite loops —
+    // we use functional setState to guard against stale reads.
     useEffect(() => {
         if (isVoiceThinking) {
             setState("thinking");
-        } else if (isConnected && state !== "speaking") {
-            setState("listening"); // Default to listening when connected
-        } else if (!isConnected && state !== "speaking" && state !== "error") {
-            setState("idle");
+        } else if (isConnected) {
+            setState(prev => (prev === "speaking" || prev === "thinking") ? prev : "listening");
+        } else {
+            setState(prev => (prev === "speaking" || prev === "error") ? prev : "idle");
         }
-    }, [isVoiceThinking, isConnected, state]);
+    }, [isVoiceThinking, isConnected]);
 
 
     const handleEndSession = () => {
