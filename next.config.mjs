@@ -6,6 +6,12 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    webpack: (config, { isServer }) => {
+        if (isServer) {
+            config.externals = [...(Array.isArray(config.externals) ? config.externals : []), 'pdf-parse'];
+        }
+        return config;
+    },
     experimental: {
         serverComponentsExternalPackages: ['pdf-parse'],
         outputFileTracingIncludes: {
