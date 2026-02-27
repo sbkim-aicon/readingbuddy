@@ -58,9 +58,12 @@ export function useRealtimeVoice({
             const pc = new RTCPeerConnection();
             pcRef.current = pc;
 
-            // Create Audio Element for AI output
+            // Create Audio Element for AI output and append to DOM
+            // (Required for reliable autoplay in Safari and some Chromium browsers)
             const audioEl = document.createElement("audio");
             audioEl.autoplay = true;
+            audioEl.style.display = "none";
+            document.body.appendChild(audioEl);
             audioElRef.current = audioEl;
 
             pc.ontrack = (e) => {
@@ -169,6 +172,8 @@ export function useRealtimeVoice({
         }
         if (audioElRef.current) {
             audioElRef.current.srcObject = null;
+            audioElRef.current.remove();
+            audioElRef.current = null;
         }
         setIsConnected(false);
         setIsThinking(false);

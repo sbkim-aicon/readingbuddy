@@ -102,6 +102,11 @@ export default function SpeakerSession({ cardConfig }: { cardConfig: CardConfig 
                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
             }
 
+            // Resume AudioContext in case browser suspended it due to autoplay policy
+            if (audioContextRef.current.state === 'suspended') {
+                await audioContextRef.current.resume();
+            }
+
             const audioString = base64Audio.split(',')[1] || base64Audio;
             const binaryString = window.atob(audioString);
             const len = binaryString.length;
