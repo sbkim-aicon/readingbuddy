@@ -51,13 +51,13 @@
   {
     "card_id": "read_with_me_2",
     "card_type": "read_with_me",
-    "title": "Core Biology Topics",
-    "subtitle": "STEM Learning",
-    "cover_image": "https://placehold.co/400x600/059669/FFFFFF/png?text=Biology",
+    "title": "코딱지 여의주",
+    "subtitle": "창작 그림책 | 4~7세",
+    "cover_image": "https://placehold.co/400x600/059669/FFFFFF/png?text=코딱지+여의주",
     "persona_name": "Reading Buddy",
     "prompt_file": null,
-    "book_data_path": null,
-    "voice_openai": "shimmer",
+    "book_data_path": "data/books/book2.json",
+    "voice_openai": "nova",
     "temperature": 0.7,
     "active": true
   },
