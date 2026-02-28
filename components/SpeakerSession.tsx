@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Send, X, Mic, MicOff, Loader2 } from "lucide-react";
-import { CardConfig, BookData, ReadingSessionState, ReadingPhasePrompts } from "@/lib/types";
+import { CardConfig, BookData, ReadingSessionState, ReadingPhasePrompts, ReadingSessionPhase } from "@/lib/types";
 import SpeakerCharacter, { SpeakerState } from "./SpeakerCharacter";
 import { useRealtimeVoice } from "@/hooks/useRealtimeVoice";
 
@@ -45,6 +45,7 @@ export default function SpeakerSession({
     const {
         connect,
         disconnect,
+        sendMessage,
         sendTextMessage,
         updateContext,
         isConnecting,
@@ -59,6 +60,22 @@ export default function SpeakerSession({
         onAudioStarted: () => setState("speaking"),
         onAudioEnded: () => setState("listening"),
         onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
+        onFunctionCall: (name, args, respond) => {
+            if (name !== 'advance_session') return;
+            const newPhase = args.phase as ReadingSessionPhase;
+            const newPageIndex = typeof args.currentPageIndex === 'number' ? args.currentPageIndex : undefined;
+            setSessionState(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    phase: newPhase,
+                    ...(newPageIndex !== undefined ? { currentPageIndex: newPageIndex } : {}),
+                };
+            });
+            // Small delay lets the session.update (triggered by sessionState change above)
+            // reach the server before response.create fires the next AI turn.
+            setTimeout(() => respond(JSON.stringify({ success: true, phase: newPhase })), 150);
+        },
         onError: (err) => {
             console.error(err);
             setState("error");
@@ -66,6 +83,37 @@ export default function SpeakerSession({
             setTimeout(() => setState("idle"), 2000);
         }
     });
+
+    // Register the advance_session tool so the model can call it to change reading phases.
+    // Sent once after the data channel is confirmed open.
+    useEffect(() => {
+        if (!isConnected || cardConfig.card_type !== 'read_with_me') return;
+        sendMessage('session.update', {
+            session: {
+                tools: [{
+                    type: 'function',
+                    name: 'advance_session',
+                    description: '독서 세션의 다음 단계 또는 페이지로 전환합니다. 단계 전환이 필요할 때 반드시 이 함수를 호출하세요.',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            phase: {
+                                type: 'string',
+                                enum: ['DURING_DIALOGIC', 'POST', 'END'],
+                                description: '전환할 단계',
+                            },
+                            currentPageIndex: {
+                                type: 'integer',
+                                description: '이동할 페이지 인덱스 (0-based). DURING_DIALOGIC 단계에서만 사용.',
+                            },
+                        },
+                        required: ['phase'],
+                    },
+                }],
+                tool_choice: 'auto',
+            },
+        });
+    }, [isConnected, cardConfig.card_type, sendMessage]);
 
     // Sync character animation with voice state.
     // NOTE: 'state' is intentionally NOT in deps to avoid infinite loops —
@@ -260,6 +308,16 @@ export default function SpeakerSession({
                 + `마무리 질문: ${bookData.post_reading?.wrap_up?.summary_question || ''}\n`
                 + `클로징 멘트: ${bookData.post_reading?.wrap_up?.closing_statement || ''}\n`;
         }
+
+        // Teach the model how to call the registered advance_session tool.
+        // (TEMP prompts mention next_state but don't name the actual function.)
+        context += '\n[함수 호출 규칙 - 필수]\n'
+            + '단계를 전환할 때는 반드시 advance_session 함수를 호출하세요:\n'
+            + '• PRE → DURING_DIALOGIC 시작: advance_session({"phase":"DURING_DIALOGIC","currentPageIndex":0})\n'
+            + '• 다음 페이지: advance_session({"phase":"DURING_DIALOGIC","currentPageIndex":<현재+1>})\n'
+            + `• 마지막 페이지(인덱스 ${bookData.book_metadata.total_pages - 1}) 완료 → POST: advance_session({"phase":"POST"})\n`
+            + '• POST 마무리 → END: advance_session({"phase":"END"})\n'
+            + '함수 호출 후 자연스럽게 이야기를 이어가세요. 호출 없이 단계를 넘기지 마세요.\n';
 
         updateContext(phasePromptBase + context);
 
