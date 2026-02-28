@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { CardConfig } from "@/lib/types";
-import { Save } from "lucide-react";
+import { Save, Settings } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -100,6 +101,7 @@ export default function AdminPage() {
                                 <th className="p-4 font-semibold text-gray-600 text-sm">Title</th>
                                 <th className="p-4 font-semibold text-gray-600 text-sm">Type</th>
                                 <th className="p-4 font-semibold text-gray-600 text-sm">Voice</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -130,6 +132,15 @@ export default function AdminPage() {
                                                 <option key={v} value={v}>{v}</option>
                                             ))}
                                         </select>
+                                    </td>
+                                    <td className="p-4">
+                                        <Link
+                                            href={`/admin/cards/${card.card_id}`}
+                                            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                        >
+                                            <Settings className="w-3.5 h-3.5" />
+                                            Detail
+                                        </Link>
                                     </td>
                                     <td className="p-4">
                                         {card.card_type === 'read_with_me' ? (

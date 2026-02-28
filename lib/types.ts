@@ -54,3 +54,18 @@ export interface BookData {
   pages: BookPage[];
   post_reading: any;
 }
+
+// Prompt versioning types
+export interface PromptVersion {
+  id: string;
+  content: string;
+  label: string;
+  created_at: string;
+}
+
+export interface PromptVersionFile {
+  card_id: string;
+  prompt_key: string; // e.g. "default", "pre", "during_dialogic", "post"
+  active_version_id: string;
+  versions: PromptVersion[];
+}
