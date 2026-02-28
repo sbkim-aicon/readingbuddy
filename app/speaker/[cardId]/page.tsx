@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { notFound } from "next/navigation";
-import { CardConfig } from "@/lib/types";
+import { CardConfig, ReadingPhasePrompts } from "@/lib/types";
 import SpeakerSession from "@/components/SpeakerSession";
 
 export default async function SpeakerPage({ params }: { params: { cardId: string } }) {
@@ -32,9 +32,26 @@ export default async function SpeakerPage({ params }: { params: { cardId: string
         }
     }
 
+    // For read_with_me cards, load per-phase prompts from the TEMP folder.
+    // These are rich Korean prompts that replace the inline-built prompt strings.
+    let readingPhasePrompts: ReadingPhasePrompts | null = null;
+    if (cardConfig.card_type === 'read_with_me') {
+        const tempDir = path.join(process.cwd(), 'prompts/read_with_me/TEMP');
+        try {
+            const [pre, during_dialogic, post] = await Promise.all([
+                fs.readFile(path.join(tempDir, 'prompt_02_pre_reading.md'), 'utf8'),
+                fs.readFile(path.join(tempDir, 'prompt_03_during_dialogic.md'), 'utf8'),
+                fs.readFile(path.join(tempDir, 'prompt_05_post_reading.md'), 'utf8'),
+            ]);
+            readingPhasePrompts = { pre, during_dialogic, post };
+        } catch (err) {
+            console.error('Failed to load reading phase prompts:', err);
+        }
+    }
+
     return (
         <main className="min-h-screen bg-[#F4F6F8] flex flex-col h-screen overflow-hidden">
-            <SpeakerSession cardConfig={cardConfig} />
+            <SpeakerSession cardConfig={cardConfig} readingPhasePrompts={readingPhasePrompts} />
         </main>
     );
 }

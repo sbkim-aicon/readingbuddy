@@ -11,6 +11,9 @@ interface UseRealtimeVoiceProps {
     onAudioStarted?: () => void;
     onAudioEnded?: () => void;
     onUserSpeaking?: (isSpeaking: boolean) => void;
+    // respond() sends the function output back to the model and triggers the next response.
+    // Call it (optionally after a short delay) once you have processed the tool call.
+    onFunctionCall?: (name: string, args: Record<string, unknown>, respond: (output: string) => void) => void;
     onError?: (error: Error) => void;
 }
 
@@ -23,6 +26,7 @@ export function useRealtimeVoice({
     onAudioStarted,
     onAudioEnded,
     onUserSpeaking,
+    onFunctionCall,
     onError
 }: UseRealtimeVoiceProps) {
     const [isConnecting, setIsConnecting] = useState(false);
@@ -37,6 +41,11 @@ export function useRealtimeVoice({
     const audioActiveRef = useRef(false);
     // Timer to delay onAudioEnded so buffered audio can finish playing
     const responseEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Tracks the function call being streamed (name + call_id)
+    const pendingFunctionCallRef = useRef<{ name: string; callId: string } | null>(null);
+    // Always-current ref so the message handler never captures a stale callback
+    const onFunctionCallRef = useRef(onFunctionCall);
+    onFunctionCallRef.current = onFunctionCall;
 
     const connect = useCallback(async () => {
         if (isConnected || isConnecting) return;
@@ -123,7 +132,7 @@ export function useRealtimeVoice({
                 try {
                     const event = JSON.parse(e.data);
 
-                    // User voice activity
+                    // ── User voice activity ──────────────────────────────────────
                     if (event.type === 'input_audio_buffer.speech_started') {
                         // Cancel any pending end-of-response timer (AI was interrupted)
                         if (responseEndTimerRef.current) {
@@ -137,7 +146,7 @@ export function useRealtimeVoice({
                         setIsThinking(true);
                     }
 
-                    // AI response lifecycle
+                    // ── AI response lifecycle ────────────────────────────────────
                     if (event.type === 'response.created') {
                         audioActiveRef.current = false; // reset for new response
                         if (responseEndTimerRef.current) {
@@ -167,6 +176,39 @@ export function useRealtimeVoice({
                             setIsThinking(false);
                             if (onAudioEnded) onAudioEnded();
                         }, 400);
+                    }
+
+                    // ── Function / tool calling ──────────────────────────────────
+                    // Step 1: capture name + call_id when the function call item appears
+                    if (event.type === 'response.output_item.added' && event.item?.type === 'function_call') {
+                        pendingFunctionCallRef.current = {
+                            name: event.item.name,
+                            callId: event.item.call_id,
+                        };
+                    }
+                    // Step 2: all arguments have streamed in — invoke handler
+                    if (event.type === 'response.function_call_arguments.done') {
+                        const pending = pendingFunctionCallRef.current;
+                        const handler = onFunctionCallRef.current;
+                        if (pending && handler) {
+                            try {
+                                const args = JSON.parse(event.arguments || '{}') as Record<string, unknown>;
+                                const callId = pending.callId;
+                                // respond() sends the result back and lets the model continue
+                                const respond = (output: string) => {
+                                    if (!dcRef.current || dcRef.current.readyState !== 'open') return;
+                                    dcRef.current.send(JSON.stringify({
+                                        type: 'conversation.item.create',
+                                        item: { type: 'function_call_output', call_id: callId, output }
+                                    }));
+                                    dcRef.current.send(JSON.stringify({ type: 'response.create' }));
+                                };
+                                handler(pending.name, args, respond);
+                            } catch {
+                                console.error('Failed to parse function call args:', event.arguments);
+                            }
+                        }
+                        pendingFunctionCallRef.current = null;
                     }
 
                     if (event.type === 'error') {
@@ -243,6 +285,7 @@ export function useRealtimeVoice({
             responseEndTimerRef.current = null;
         }
         audioActiveRef.current = false;
+        pendingFunctionCallRef.current = null;
 
         if (pcRef.current) {
             pcRef.current.close();
