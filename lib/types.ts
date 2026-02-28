@@ -17,6 +17,12 @@ export interface CardConfig {
 
 export type ReadingSessionPhase = "PRE" | "DURING_DIALOGIC" | "POST" | "END";
 
+export interface ReadingPhasePrompts {
+    pre: string;
+    during_dialogic: string;
+    post: string;
+}
+
 export interface ReadingSessionState {
   phase: ReadingSessionPhase;
   currentPageIndex: number; // 0-indexed across book.pages
