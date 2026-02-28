@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOpenAIChatResponse } from "@/lib/openai-chat";
+import { getActivePromptContent } from "@/lib/prompt-versions";
 import fs from "fs/promises";
 import path from "path";
 
@@ -28,18 +29,33 @@ export async function POST(req: NextRequest) {
             const { phase, currentPageIndex } = body.session_state;
             const bookData = body.book_data;
 
-            let promptPath = "";
-            if (phase === 'PRE') {
-                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 02 pre reading.md");
-            } else if (phase === 'DURING_DIALOGIC') {
-                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 03 during dialogic.md");
-            } else if (phase === 'POST') {
-                promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 05 post reading.md");
-            }
+            // Map phase to prompt key for versioned prompts
+            const phaseKeyMap: Record<string, string> = {
+                'PRE': 'pre',
+                'DURING_DIALOGIC': 'during_dialogic',
+                'POST': 'post',
+            };
+            const promptKey = phaseKeyMap[phase];
 
-            if (promptPath) {
-                const template = await fs.readFile(promptPath, "utf8");
-                systemPrompt = template;
+            if (promptKey) {
+                // Try versioned prompt first
+                const versionedContent = await getActivePromptContent(card_id, promptKey);
+                if (versionedContent) {
+                    systemPrompt = versionedContent;
+                } else {
+                    // Fallback to original file
+                    let promptPath = "";
+                    if (phase === 'PRE') {
+                        promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 02 pre reading.md");
+                    } else if (phase === 'DURING_DIALOGIC') {
+                        promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 03 during dialogic.md");
+                    } else if (phase === 'POST') {
+                        promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 05 post reading.md");
+                    }
+                    if (promptPath) {
+                        systemPrompt = await fs.readFile(promptPath, "utf8");
+                    }
+                }
             }
 
             // Provide only current page data (not full book) to minimize token usage
@@ -82,8 +98,11 @@ TotalPages: ${bookData.book_metadata.total_pages}
             finalMessage = `[CHILD_RESPONSE]\n${message}`;
 
         } else {
-            // Fallback to standard general prompt
-            if (cardConfig.prompt_file) {
+            // Try versioned prompt first, then fallback to file
+            const versionedContent = await getActivePromptContent(card_id, "default");
+            if (versionedContent) {
+                systemPrompt = versionedContent;
+            } else if (cardConfig.prompt_file) {
                 const promptPath = path.join(process.cwd(), cardConfig.prompt_file);
                 systemPrompt = await fs.readFile(promptPath, "utf8");
             }
