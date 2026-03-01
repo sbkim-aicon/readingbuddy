@@ -2,23 +2,40 @@ import Link from 'next/link';
 import { CardConfig } from '@/lib/types';
 import { Play } from 'lucide-react';
 
+// Extract bg/fg colors from a placehold.co URL so we can render Korean text via CSS.
+function parsePlaceholdUrl(url: string): { bg: string; fg: string } | null {
+    const match = url.match(/placehold\.co\/\d+x\d+\/([A-Fa-f0-9]+)\/([A-Fa-f0-9]+)/);
+    if (!match) return null;
+    return { bg: `#${match[1]}`, fg: `#${match[2]}` };
+}
+
 export default function ContentCard({ card }: { card: CardConfig }) {
     // If no cover image, use a colorful gradient placeholder
     const gradientClass = "bg-gradient-to-br from-indigo-400 to-purple-400";
+
+    const placeholdColors = card.cover_image ? parsePlaceholdUrl(card.cover_image) : null;
 
     return (
         <Link href={`/speaker/${card.card_id}`} className="group relative w-full flex flex-col items-center">
             {/* Cover Image Container */}
             <div className={`relative w-full aspect-[2/3] max-w-[240px] rounded-3xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-md bg-white ${!card.cover_image && gradientClass}`}>
                 {card.cover_image && (
-                    // We use regular img tag here to support placehold.co without next.config.ts setup, 
-                    // or Next Image if configured. 
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                        src={card.cover_image}
-                        alt={card.title}
-                        className="w-full h-full object-cover"
-                    />
+                    placeholdColors ? (
+                        // CSS placeholder — renders Korean text correctly (placehold.co doesn't support Korean fonts)
+                        <div
+                            className="w-full h-full flex items-center justify-center p-6 text-center"
+                            style={{ backgroundColor: placeholdColors.bg, color: placeholdColors.fg }}
+                        >
+                            <span className="font-bold text-xl leading-snug break-keep">{card.title}</span>
+                        </div>
+                    ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                            src={card.cover_image}
+                            alt={card.title}
+                            className="w-full h-full object-cover"
+                        />
+                    )
                 )}
 
                 {/* Play Button Overlay */}
