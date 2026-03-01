@@ -42,7 +42,27 @@ export async function GET(
           try {
             versionFile = await initializeFromFile(params.cardId, key, filePath);
           } catch {
-            // File doesn't exist, start with empty
+            // Write failed (e.g. read-only FS on Vercel) — read original file
+            // and return as a virtual version so the editor still shows content.
+            try {
+              const content = await fs.readFile(filePath, "utf8");
+              const virtualId = "v_original";
+              versionFile = {
+                card_id: params.cardId,
+                prompt_key: key,
+                active_version_id: virtualId,
+                versions: [
+                  {
+                    id: virtualId,
+                    content,
+                    label: "v1 (original)",
+                    created_at: new Date().toISOString(),
+                  },
+                ],
+              };
+            } catch {
+              // Original file also doesn't exist
+            }
           }
         }
       }
