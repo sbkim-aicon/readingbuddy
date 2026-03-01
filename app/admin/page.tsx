@@ -1,25 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CardConfig } from "@/lib/types";
 import { Save, Settings } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [pin, setPin] = useState("");
     const [cards, setCards] = useState<CardConfig[]>([]);
 
-    // Simple hardcoded PIN for prototype
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (pin === (process.env.NEXT_PUBLIC_ADMIN_PIN || "1234")) {
-            setIsAuthenticated(true);
-            fetchCards();
-        } else {
-            alert("Invalid PIN");
-        }
-    };
+    useEffect(() => {
+        fetchCards();
+    }, []);
 
     const fetchCards = async () => {
         try {
@@ -55,26 +46,6 @@ export default function AdminPage() {
         newCards[index].active = !newCards[index].active;
         setCards(newCards);
     };
-
-    if (!isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-[#F4F6F8] flex items-center justify-center p-4">
-                <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-sm text-center">
-                    <h1 className="text-2xl font-bold mb-6 text-[#333333]">Admin Panel</h1>
-                    <input
-                        type="password"
-                        value={pin}
-                        onChange={e => setPin(e.target.value)}
-                        placeholder="Enter PIN"
-                        className="border border-gray-200 rounded-lg px-4 py-2 mb-4 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                    <button type="submit" className="w-full bg-blue-500 text-white rounded-lg py-2 font-medium hover:bg-blue-600">
-                        Login
-                    </button>
-                </form>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-[#F4F6F8] p-6 sm:p-12">
