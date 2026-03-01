@@ -51,12 +51,12 @@
   {
     "card_id": "read_with_me_2",
     "card_type": "read_with_me",
-    "title": "코딱지 여의주",
-    "subtitle": "창작 그림책 | 4~7세",
-    "cover_image": "https://placehold.co/400x600/059669/FFFFFF/png?text=코딱지+여의주",
+    "title": "사이좋게 놀아요",
+    "subtitle": "김은파 글 | 아짓 나라얀 그림 | 4~7세",
+    "cover_image": "https://placehold.co/400x600/059669/FFFFFF/png?text=사이좋게+놀아요",
     "persona_name": "Reading Buddy",
     "prompt_file": null,
-    "book_data_path": "data/books/book2.json",
+    "book_data_path": "data/books/book3.json",
     "voice_openai": "shimmer",
     "temperature": 0.7,
     "active": true
