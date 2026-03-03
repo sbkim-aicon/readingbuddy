@@ -108,5 +108,17 @@
     "voice_openai": "echo",
     "temperature": 0.85,
     "active": true
+  },
+  {
+    "card_id": "ocean_chosung",
+    "card_type": "general",
+    "title": "해양동물 초성퀴즈",
+    "subtitle": "상어와 친구들 | 한글 초성 맞히기",
+    "cover_image": "https://placehold.co/400x600/0EA5E9/FFFFFF/png?text=해양동물+초성퀴즈",
+    "persona_name": "샤키",
+    "prompt_file": "prompts/cards/card_10_ocean_chosung.md",
+    "voice_openai": "coral",
+    "temperature": 0.8,
+    "active": true
   }
 ]
