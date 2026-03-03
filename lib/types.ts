@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export interface SoundConfig {
+  bgm?: string;        // path relative to /public, e.g. "sounds/bgm/ocean_ambient.mp3"
+  bgm_volume?: number; // 0–1, default 0.2
+}
+
 export interface CardConfig {
   card_id: string;
   card_type: "general" | "read_with_me";
@@ -13,6 +18,7 @@ export interface CardConfig {
   voice_openai: string;
   temperature: number;
   active: boolean;
+  sounds?: SoundConfig;
 }
 
 export type ReadingSessionPhase = "PRE" | "DURING_DIALOGIC" | "POST" | "END";

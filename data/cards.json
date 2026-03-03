@@ -46,7 +46,11 @@
     "book_data_path": "data/books/book1.json",
     "voice_openai": "shimmer",
     "temperature": 0.7,
-    "active": true
+    "active": true,
+    "sounds": {
+      "bgm": "sounds/bgm/reading_soft.mp3",
+      "bgm_volume": 0.15
+    }
   },
   {
     "card_id": "read_with_me_2",
@@ -59,7 +63,11 @@
     "book_data_path": "data/books/book3.json",
     "voice_openai": "shimmer",
     "temperature": 0.7,
-    "active": true
+    "active": true,
+    "sounds": {
+      "bgm": "sounds/bgm/reading_soft.mp3",
+      "bgm_volume": 0.15
+    }
   },
   {
     "card_id": "mindreader",
@@ -107,7 +115,11 @@
     "prompt_file": "prompts/cards/card_09_soccer_20q.md",
     "voice_openai": "echo",
     "temperature": 0.85,
-    "active": true
+    "active": true,
+    "sounds": {
+      "bgm": "sounds/bgm/stadium_crowd.mp3",
+      "bgm_volume": 0.15
+    }
   },
   {
     "card_id": "ocean_chosung",
@@ -119,6 +131,10 @@
     "prompt_file": "prompts/cards/card_10_ocean_chosung.md",
     "voice_openai": "coral",
     "temperature": 0.8,
-    "active": true
+    "active": true,
+    "sounds": {
+      "bgm": "sounds/bgm/ocean_ambient.mp3",
+      "bgm_volume": 0.2
+    }
   }
 ]
