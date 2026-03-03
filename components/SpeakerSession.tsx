@@ -6,6 +6,7 @@ import { Send, X, Mic, MicOff, Loader2 } from "lucide-react";
 import { CardConfig, BookData, ReadingSessionState, ReadingPhasePrompts, ReadingSessionPhase } from "@/lib/types";
 import SpeakerCharacter, { SpeakerState } from "./SpeakerCharacter";
 import { useRealtimeVoice } from "@/hooks/useRealtimeVoice";
+import { useSoundManager } from "@/hooks/useSoundManager";
 
 export default function SpeakerSession({
     cardConfig,
@@ -23,6 +24,9 @@ export default function SpeakerSession({
     // Reading session specific state
     const [bookData, setBookData] = useState<BookData | null>(null);
     const [sessionState, setSessionState] = useState<ReadingSessionState | null>(null);
+
+    // Sound manager — BGM + synthesized SFX
+    const { playSFX, startBGM, stopBGM } = useSoundManager(cardConfig.sounds);
 
     // Fetch Book Data if it's a read_with_me card
     useEffect(() => {
@@ -61,6 +65,11 @@ export default function SpeakerSession({
         onAudioEnded: () => setState("listening"),
         onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
         onFunctionCall: (name, args, respond) => {
+            if (name === 'play_sound') {
+                playSFX(args.name as string);
+                respond(JSON.stringify({ success: true }));
+                return;
+            }
             if (name !== 'advance_session') return;
             const newPhase = args.phase as ReadingSessionPhase;
             const newPageIndex = typeof args.currentPageIndex === 'number' ? args.currentPageIndex : undefined;
@@ -84,36 +93,64 @@ export default function SpeakerSession({
         }
     });
 
-    // Register the advance_session tool so the model can call it to change reading phases.
-    // Sent once after the data channel is confirmed open.
+    // Register function tools once the data channel is open.
+    // advance_session — read_with_me cards only
+    // play_sound      — any card with a sounds config
     useEffect(() => {
-        if (!isConnected || cardConfig.card_type !== 'read_with_me') return;
-        sendMessage('session.update', {
-            session: {
-                tools: [{
-                    type: 'function',
-                    name: 'advance_session',
-                    description: '독서 세션의 다음 단계 또는 페이지로 전환합니다. 단계 전환이 필요할 때 반드시 이 함수를 호출하세요.',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            phase: {
-                                type: 'string',
-                                enum: ['DURING_DIALOGIC', 'POST', 'END'],
-                                description: '전환할 단계',
-                            },
-                            currentPageIndex: {
-                                type: 'integer',
-                                description: '이동할 페이지 인덱스 (0-based). DURING_DIALOGIC 단계에서만 사용.',
-                            },
+        if (!isConnected) return;
+        const tools: object[] = [];
+
+        if (cardConfig.card_type === 'read_with_me') {
+            tools.push({
+                type: 'function',
+                name: 'advance_session',
+                description: '독서 세션의 다음 단계 또는 페이지로 전환합니다. 단계 전환이 필요할 때 반드시 이 함수를 호출하세요.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        phase: {
+                            type: 'string',
+                            enum: ['DURING_DIALOGIC', 'POST', 'END'],
+                            description: '전환할 단계',
                         },
-                        required: ['phase'],
+                        currentPageIndex: {
+                            type: 'integer',
+                            description: '이동할 페이지 인덱스 (0-based). DURING_DIALOGIC 단계에서만 사용.',
+                        },
                     },
-                }],
-                tool_choice: 'auto',
-            },
-        });
-    }, [isConnected, cardConfig.card_type, sendMessage]);
+                    required: ['phase'],
+                },
+            });
+        }
+
+        if (cardConfig.sounds) {
+            tools.push({
+                type: 'function',
+                name: 'play_sound',
+                description: '효과음을 재생합니다. 게임 이벤트에 맞는 사운드를 선택하세요.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        name: {
+                            type: 'string',
+                            enum: ['correct', 'wrong', 'hint', 'game_start', 'level_up', 'splash', 'goal'],
+                            description: '재생할 효과음: correct(정답), wrong(오답), hint(힌트), game_start(게임시작), level_up(레벨업), splash(물소리), goal(골)',
+                        },
+                    },
+                    required: ['name'],
+                },
+            });
+        }
+
+        if (tools.length === 0) return;
+        sendMessage('session.update', { session: { tools, tool_choice: 'auto' } });
+    }, [isConnected, cardConfig.card_type, cardConfig.sounds, sendMessage]);
+
+    // BGM: start when connected, fade out when disconnected
+    useEffect(() => {
+        if (isConnected) startBGM();
+        else stopBGM();
+    }, [isConnected, startBGM, stopBGM]);
 
     // Sync character animation with voice state.
     // NOTE: 'state' is intentionally NOT in deps to avoid infinite loops —
