@@ -178,10 +178,23 @@ export default function SpeakerSession({
     const handleStart = () => {
         initTTSAudio();
         setIsStarted(true);
-        connect();
+        if (cardConfig.use_realtime !== false) {
+            connect();
+        } else {
+            // Non-realtime mode: Trigger initial greeting via text API
+            const greetingMsg = cardConfig.card_type === 'read_with_me'
+                ? "우리 이제 책 읽을 시간이야! 짧게 단문으로 신나게 첫인사를 건네줘."
+                : "안녕! 짧게 인사해줘.";
+            handleSubmit(undefined, greetingMsg);
+        }
     };
 
     const handleMicToggle = () => {
+        if (cardConfig.use_realtime === false) {
+            alert("이 카드는 실시간 음성(단방향 마이크) 기능을 지원하지 않습니다. 텍스트로 대화해주세요.");
+            return;
+        }
+
         if (isConnected) {
             disconnect();
             setIsStarted(false);
@@ -290,7 +303,12 @@ export default function SpeakerSession({
                 fetch('/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: data.response, voice: data.voice })
+                    body: JSON.stringify({
+                        text: data.response,
+                        voice: data.voice,
+                        voice_provider: data.voice_provider,
+                        elevenlabs_voice_id: data.elevenlabs_voice_id
+                    })
                 })
                     .then(r => r.json())
                     .then(tts => { if (tts.audio_url) playAudioString(tts.audio_url); else setState("idle"); })
@@ -473,18 +491,20 @@ export default function SpeakerSession({
                 <form onSubmit={handleSubmit} className="flex gap-3 bg-white p-3 md:p-4 rounded-3xl shadow-lg border border-gray-100 items-center">
                     <button
                         type="button"
-                        disabled={isConnecting}
+                        disabled={isConnecting || cardConfig.use_realtime === false}
                         className={`p-3 md:p-4 rounded-full transition-colors shrink-0 disabled:opacity-50
-                            ${isConnected && isMicOpen ? 'bg-green-100 text-green-600 hover:bg-green-200' :
-                                isConnected && !isMicOpen ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
-                                    'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                            ${cardConfig.use_realtime === false ? 'bg-gray-100 text-gray-400' :
+                                isConnected && isMicOpen ? 'bg-green-100 text-green-600 hover:bg-green-200' :
+                                    isConnected && !isMicOpen ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
+                                        'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                         onClick={handleMicToggle}
-                        title={isConnected ? "마이크 끄기" : "실시간 음성 대화 시작하기"}
+                        title={cardConfig.use_realtime === false ? "이 카드는 마이크를 지원하지 않습니다" : isConnected ? "마이크 끄기" : "실시간 음성 대화 시작하기"}
                     >
-                        {isConnecting ? <Loader2 className="w-6 h-6 animate-spin" /> :
-                            isConnected && isMicOpen ? <Mic className="w-6 h-6" /> :
-                                isConnected && !isMicOpen ? <MicOff className="w-6 h-6" /> :
-                                    <MicOff className="w-6 h-6 opacity-50" />}
+                        {cardConfig.use_realtime === false ? <MicOff className="w-6 h-6" /> :
+                            isConnecting ? <Loader2 className="w-6 h-6 animate-spin" /> :
+                                isConnected && isMicOpen ? <Mic className="w-6 h-6" /> :
+                                    isConnected && !isMicOpen ? <MicOff className="w-6 h-6" /> :
+                                        <MicOff className="w-6 h-6 opacity-50" />}
                     </button>
 
                     <div className="relative flex-1 h-full flex items-center">

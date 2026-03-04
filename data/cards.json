@@ -65,6 +65,27 @@
     }
   },
   {
+    "card_id": "book1_llm",
+    "card_type": "read_with_me",
+    "title": "이천 원으로 뭘 할까? (ElevenLabs)",
+    "subtitle": "김은파 글 | 박은현 그림",
+    "cover_image": "/images/cards/book1.png",
+    "persona_name": "Reading Buddy",
+    "prompt_file": null,
+    "book_data_path": "data/books/book1.json",
+    "voice_openai": "shimmer",
+    "temperature": 0.7,
+    "active": true,
+    "sounds": {
+      "bgm": "sounds/Read with me_2.mp3",
+      "bgm_volume": 0.15
+    },
+    "use_realtime": false,
+    "voice_provider": "elevenlabs",
+    "elevenlabs_voice_id": "DMkRitQrfpiddSQT5adl",
+    "llm_model": "gpt-4o-mini"
+  },
+  {
     "card_id": "read_with_me_2",
     "card_type": "read_with_me",
     "title": "사이좋게 놀아요",

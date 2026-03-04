@@ -19,14 +19,18 @@ export interface CardConfig {
   temperature: number;
   active: boolean;
   sounds?: SoundConfig;
+  use_realtime?: boolean;
+  voice_provider?: 'openai' | 'elevenlabs';
+  elevenlabs_voice_id?: string;
+  llm_model?: string;
 }
 
 export type ReadingSessionPhase = "PRE" | "DURING_DIALOGIC" | "POST" | "END";
 
 export interface ReadingPhasePrompts {
-    pre: string;
-    during_dialogic: string;
-    post: string;
+  pre: string;
+  during_dialogic: string;
+  post: string;
 }
 
 export interface ReadingSessionState {

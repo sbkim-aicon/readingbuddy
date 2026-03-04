@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateTTS } from "@/lib/openai-tts";
+import { generateElevenLabsTTS } from "@/lib/elevenlabs-tts";
 
 export async function POST(req: NextRequest) {
     try {
-        const { text, voice } = await req.json();
+        const { text, voice, voice_provider, elevenlabs_voice_id } = await req.json();
         if (!text) return NextResponse.json({ error: "Missing text" }, { status: 400 });
 
         const sanitized = text
@@ -11,7 +12,13 @@ export async function POST(req: NextRequest) {
             .replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ.,!?]/g, "")
             .trim();
 
-        const audioBuffer = await generateTTS(sanitized, voice || "alloy");
+        let audioBuffer: Buffer;
+        if (voice_provider === 'elevenlabs' && elevenlabs_voice_id) {
+            audioBuffer = await generateElevenLabsTTS(sanitized, elevenlabs_voice_id);
+        } else {
+            audioBuffer = await generateTTS(sanitized, voice || "alloy");
+        }
+
         const audio_url = `data:audio/mp3;base64,${audioBuffer.toString("base64")}`;
         return NextResponse.json({ audio_url });
     } catch (error) {

@@ -110,7 +110,8 @@ TotalPages: ${bookData.book_metadata.total_pages}
 
         // 2. Get OpenAI Text Response
         const isJsonMode = cardConfig.card_type === 'read_with_me';
-        const aiResponseRaw = await generateOpenAIChatResponse(systemPrompt, finalMessage, conversation_history, isJsonMode);
+        const modelToUse = cardConfig.llm_model || "gpt-4o-mini";
+        const aiResponseRaw = await generateOpenAIChatResponse(systemPrompt, finalMessage, conversation_history, isJsonMode, modelToUse);
 
         let aiResponseText = aiResponseRaw;
         let newSessionState = null;
@@ -126,10 +127,11 @@ TotalPages: ${bookData.book_metadata.total_pages}
             }
         }
 
-        // TTS is generated separately by the client via /api/tts to return text immediately
         return NextResponse.json({
             response: aiResponseText,
             voice: cardConfig.voice_openai || "alloy",
+            voice_provider: cardConfig.voice_provider || "openai",
+            elevenlabs_voice_id: cardConfig.elevenlabs_voice_id,
             ...(newSessionState && { session_state: newSessionState })
         });
 

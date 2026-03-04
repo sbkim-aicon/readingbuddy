@@ -9,7 +9,8 @@ export async function generateOpenAIChatResponse(
     userMessage: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     chatHistory: any[] = [],
-    isJsonMode: boolean = false
+    isJsonMode: boolean = false,
+    model: string = "gpt-4o-mini"
 ) {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +21,7 @@ export async function generateOpenAIChatResponse(
         ];
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Using gpt-4o-mini for faster prototype responses
+            model: model, // Using provided model or gpt-4o-mini default
             messages: messages,
             temperature: isJsonMode ? 0.2 : 0.8,
             max_tokens: isJsonMode ? 512 : 1024,
