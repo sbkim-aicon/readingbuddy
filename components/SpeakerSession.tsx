@@ -55,6 +55,7 @@ export default function SpeakerSession({
         isConnecting,
         isConnected,
         isThinking: isVoiceThinking,
+        isMicOpen,
         micError
     } = useRealtimeVoice({
         cardId: cardConfig.card_id,
@@ -398,12 +399,12 @@ export default function SpeakerSession({
 
                         {state === "error" && (
                             <p className="text-red-500 text-center text-sm">
-                                마이크 연결에 실패했습니다.<br/>브라우저 마이크 권한을 확인해주세요.
+                                마이크 연결에 실패했습니다.<br />브라우저 마이크 권한을 확인해주세요.
                             </p>
                         )}
 
                         <p className="text-gray-400 text-sm text-center leading-relaxed">
-                            버튼을 누르면 마이크가 켜지고<br/>AI와 실시간 음성 대화가 시작됩니다.
+                            버튼을 누르면 마이크가 켜지고<br />AI와 실시간 음성 대화가 시작됩니다.
                         </p>
                     </div>
                 </div>
@@ -423,7 +424,21 @@ export default function SpeakerSession({
                     <div className="text-center font-bold text-[#333333] text-xl flex items-center gap-2">
                         {cardConfig.persona_name}
                         {isConnecting && <Loader2 className="w-4 h-4 animate-spin text-blue-400" />}
-                        {isConnected && <span className="flex w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>}
+                        {isConnected && (
+                            <span className="flex text-xs font-normal ml-2 items-center">
+                                {isMicOpen ? (
+                                    <span className="flex items-center gap-1.5 text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                        마이크 켜짐 (말씀하세요)
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                        듣는 중...
+                                    </span>
+                                )}
+                            </span>
+                        )}
                     </div>
                     {sessionState && (
                         <div className="mt-1 px-3 py-1 bg-blue-50 text-blue-600 font-semibold rounded-full text-sm shadow-sm border border-blue-100">
@@ -460,12 +475,16 @@ export default function SpeakerSession({
                         type="button"
                         disabled={isConnecting}
                         className={`p-3 md:p-4 rounded-full transition-colors shrink-0 disabled:opacity-50
-                            ${isConnected ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                            ${isConnected && isMicOpen ? 'bg-green-100 text-green-600 hover:bg-green-200' :
+                                isConnected && !isMicOpen ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
+                                    'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                         onClick={handleMicToggle}
                         title={isConnected ? "마이크 끄기" : "실시간 음성 대화 시작하기"}
                     >
                         {isConnecting ? <Loader2 className="w-6 h-6 animate-spin" /> :
-                            isConnected ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6 opacity-50" />}
+                            isConnected && isMicOpen ? <Mic className="w-6 h-6" /> :
+                                isConnected && !isMicOpen ? <MicOff className="w-6 h-6" /> :
+                                    <MicOff className="w-6 h-6 opacity-50" />}
                     </button>
 
                     <div className="relative flex-1 h-full flex items-center">

@@ -33,9 +33,11 @@ export function useRealtimeVoice({
     const [isConnected, setIsConnected] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
     const [micError, setMicError] = useState<string | null>(null);
+    const [isMicOpen, setIsMicOpen] = useState(false);
 
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const dcRef = useRef<RTCDataChannel | null>(null);
+    const localAudioTrackRef = useRef<MediaStreamTrack | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     // Tracks whether AI audio is currently streaming (resets per response)
     const audioActiveRef = useRef(false);
@@ -125,6 +127,9 @@ export function useRealtimeVoice({
 
                 setIsConnected(true);
                 setIsConnecting(false);
+                if (localAudioTrackRef.current) {
+                    setIsMicOpen(true);
+                }
                 console.log("WebRTC data channel open — session ready.");
             });
 
@@ -161,6 +166,10 @@ export function useRealtimeVoice({
                         if (!audioActiveRef.current) {
                             audioActiveRef.current = true;
                             setIsThinking(false);
+                            if (localAudioTrackRef.current) {
+                                localAudioTrackRef.current.enabled = false;
+                                setIsMicOpen(false);
+                            }
                             if (onAudioStarted) onAudioStarted();
                         }
                     }
@@ -174,6 +183,10 @@ export function useRealtimeVoice({
                         responseEndTimerRef.current = setTimeout(() => {
                             audioActiveRef.current = false;
                             setIsThinking(false);
+                            if (localAudioTrackRef.current) {
+                                localAudioTrackRef.current.enabled = true;
+                                setIsMicOpen(true);
+                            }
                             if (onAudioEnded) onAudioEnded();
                         }, 400);
                     }
@@ -230,6 +243,9 @@ export function useRealtimeVoice({
                         autoGainControl: true,
                     }
                 });
+                const audioTrack = ms.getAudioTracks()[0];
+                localAudioTrackRef.current = audioTrack;
+                // isMicOpen will be set to true when the data channel opens and the connection is fully established
                 ms.getTracks().forEach((track) => pc.addTrack(track, ms));
             } catch (err: any) {
                 // Mic denied — continue; text input + AI voice output still work
@@ -245,7 +261,7 @@ export function useRealtimeVoice({
             await pc.setLocalDescription(offer);
 
             const baseUrl = "https://api.openai.com/v1/realtime";
-            const model = "gpt-4o-realtime-preview";
+            const model = "gpt-4o-mini-realtime-preview";
 
             const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
                 method: "POST",
@@ -287,6 +303,11 @@ export function useRealtimeVoice({
         audioActiveRef.current = false;
         pendingFunctionCallRef.current = null;
 
+        if (localAudioTrackRef.current) {
+            localAudioTrackRef.current.stop();
+            localAudioTrackRef.current = null;
+        }
+
         if (pcRef.current) {
             pcRef.current.close();
             pcRef.current = null;
@@ -302,6 +323,7 @@ export function useRealtimeVoice({
         }
         setIsConnected(false);
         setIsThinking(false);
+        setIsMicOpen(false);
     }, []);
 
     const sendMessage = useCallback((type: string, payload: any = {}) => {
@@ -339,6 +361,7 @@ export function useRealtimeVoice({
         isConnecting,
         isConnected,
         isThinking,
+        isMicOpen,
         micError
     };
 }

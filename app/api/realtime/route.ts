@@ -14,7 +14,7 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "gpt-4o-realtime-preview",
+                model: "gpt-4o-mini-realtime-preview",
                 voice: voice_openai || "alloy",
                 instructions: system_prompt || "You are a helpful reading buddy.",
                 temperature: temperature || 0.8,
