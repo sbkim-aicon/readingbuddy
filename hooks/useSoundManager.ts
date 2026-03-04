@@ -28,19 +28,19 @@ function tone(
 const SFX: Record<string, (ctx: AudioContext) => void> = {
     correct: (ctx) => {
         const t = ctx.currentTime;
-        tone(ctx, 523,  t,        0.12); // C5
-        tone(ctx, 659,  t + 0.10, 0.12); // E5
-        tone(ctx, 784,  t + 0.20, 0.12); // G5
+        tone(ctx, 523, t, 0.12); // C5
+        tone(ctx, 659, t + 0.10, 0.12); // E5
+        tone(ctx, 784, t + 0.20, 0.12); // G5
         tone(ctx, 1047, t + 0.30, 0.28); // C6
     },
     wrong: (ctx) => {
         const t = ctx.currentTime;
-        tone(ctx, 280, t,        0.15, 'sawtooth', 0.18);
+        tone(ctx, 280, t, 0.15, 'sawtooth', 0.18);
         tone(ctx, 220, t + 0.15, 0.30, 'sawtooth', 0.18);
     },
     hint: (ctx) => {
         const t = ctx.currentTime;
-        tone(ctx, 880,  t,        0.12, 'sine', 0.18);
+        tone(ctx, 880, t, 0.12, 'sine', 0.18);
         tone(ctx, 1047, t + 0.13, 0.22, 'sine', 0.18);
     },
     game_start: (ctx) => {
@@ -66,10 +66,10 @@ const SFX: Record<string, (ctx: AudioContext) => void> = {
     // Soccer goal fanfare
     goal: (ctx) => {
         const t = ctx.currentTime;
-        tone(ctx, 659,  t,        0.10, 'square', 0.15);
-        tone(ctx, 784,  t + 0.10, 0.10, 'square', 0.15);
+        tone(ctx, 659, t, 0.10, 'square', 0.15);
+        tone(ctx, 784, t + 0.10, 0.10, 'square', 0.15);
         tone(ctx, 1047, t + 0.20, 0.15, 'square', 0.15);
-        tone(ctx, 1319, t + 0.36, 0.40, 'sine',   0.20);
+        tone(ctx, 1319, t + 0.36, 0.40, 'sine', 0.20);
     },
 };
 
@@ -102,17 +102,24 @@ export function useSoundManager(sounds?: SoundConfig) {
     const startBGM = useCallback(() => {
         if (!sounds?.bgm) return;
         try {
+            const src = sounds.bgm.startsWith('/') ? sounds.bgm : `/${sounds.bgm}`;
+            console.log(`[SoundManager] Starting BGM: ${src} (vol: ${sounds.bgm_volume ?? 0.2})`);
+
             if (!bgmRef.current) {
                 const el = document.createElement('audio');
                 el.loop = true;
                 el.volume = sounds.bgm_volume ?? 0.2;
-                el.src = sounds.bgm;
+                el.src = src;
                 el.style.display = 'none';
                 document.body.appendChild(el);
                 bgmRef.current = el;
+            } else if (bgmRef.current.src !== window.location.origin + src) {
+                // If BGM file changed, update it
+                bgmRef.current.src = src;
             }
-            bgmRef.current.play().catch(() => {
-                // Silently skip if file doesn't exist yet
+
+            bgmRef.current.play().catch((err) => {
+                console.error('[SoundManager] BGM play failed:', err);
             });
         } catch (e) {
             console.warn('[SoundManager] BGM start error:', e);
@@ -125,6 +132,7 @@ export function useSoundManager(sounds?: SoundConfig) {
         // Fade out over ~1 second
         const targetVolume = sounds?.bgm_volume ?? 0.2;
         const step = targetVolume / 20;
+        console.log('[SoundManager] Stopping BGM (fading out...)');
         const fade = setInterval(() => {
             if (!bgmRef.current) { clearInterval(fade); return; }
             if (bgmRef.current.volume > step) {
@@ -133,6 +141,7 @@ export function useSoundManager(sounds?: SoundConfig) {
                 bgmRef.current.pause();
                 bgmRef.current.volume = targetVolume;
                 clearInterval(fade);
+                console.log('[SoundManager] BGM stopped.');
             }
         }, 50);
     }, [sounds]);

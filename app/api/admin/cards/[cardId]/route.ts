@@ -61,10 +61,16 @@ export async function PUT(
 
     await fs.writeFile(cardsPath, JSON.stringify(cards, null, 2), "utf8");
     return NextResponse.json(cards[index]);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Failed to update card:", err);
+
+    let details = err instanceof Error ? err.message : String(err);
+    if (err.code === 'EPERM' || err.code === 'EROFS') {
+      details = "Vercel 배포 환경에서는 파일 저장이 불가능합니다. 로컬 환경(npm run dev)에서 수정 후 커밋해 주세요. (Read-only file system)";
+    }
+
     return NextResponse.json(
-      { error: "Failed to update card", details: err instanceof Error ? err.message : String(err) },
+      { error: "Failed to update card", details },
       { status: 500 }
     );
   }

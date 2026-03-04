@@ -82,27 +82,10 @@
     }
   },
   {
-    "card_id": "book2",
-    "card_type": "read_with_me",
-    "title": "코딱지 여의주",
-    "subtitle": "미상 글 | 4~7세",
-    "cover_image": "https://placehold.co/400x600/8B5CF6/FFFFFF/png?text=코딱지+여의주",
-    "persona_name": "Reading Buddy",
-    "prompt_file": null,
-    "book_data_path": "data/books/book2.json",
-    "voice_openai": "shimmer",
-    "temperature": 0.7,
-    "active": true,
-    "sounds": {
-      "bgm": "sounds/Read with me_2.mp3",
-      "bgm_volume": 0.15
-    }
-  },
-  {
     "card_id": "mindreader",
     "card_type": "general",
-    "title": "English Skills Tenses",
-    "subtitle": "Past Present & Future",
+    "title": "Mind reader",
+    "subtitle": "20 Quetions",
     "cover_image": "https://placehold.co/400x600/3B82F6/FFFFFF/png?text=Tenses",
     "persona_name": "Mystic",
     "prompt_file": "prompts/cards/card_06_mindreader.md",
