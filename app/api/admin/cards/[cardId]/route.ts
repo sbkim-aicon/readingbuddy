@@ -61,9 +61,10 @@ export async function PUT(
 
     await fs.writeFile(cardsPath, JSON.stringify(cards, null, 2), "utf8");
     return NextResponse.json(cards[index]);
-  } catch {
+  } catch (err) {
+    console.error("Failed to update card:", err);
     return NextResponse.json(
-      { error: "Failed to update card" },
+      { error: "Failed to update card", details: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
   }
