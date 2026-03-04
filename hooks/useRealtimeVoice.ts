@@ -38,6 +38,7 @@ export function useRealtimeVoice({
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const dcRef = useRef<RTCDataChannel | null>(null);
     const localAudioTrackRef = useRef<MediaStreamTrack | null>(null);
+    const localStreamRef = useRef<MediaStream | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     // Tracks whether AI audio is currently streaming (resets per response)
     const audioActiveRef = useRef(false);
@@ -159,17 +160,19 @@ export function useRealtimeVoice({
                             responseEndTimerRef.current = null;
                         }
                         setIsThinking(true);
+                        // Disable mic while AI is processing or speaking
+                        if (localAudioTrackRef.current) {
+                            localAudioTrackRef.current.enabled = false;
+                            setIsMicOpen(false);
+                        }
                     }
 
-                    // First audio chunk of a response → AI started speaking
-                    if (event.type === 'response.audio.delta') {
+                    // WebRTC API skips `audio.delta` by default.
+                    // We use `output_item.added` to detect when the AI's spoken message actually begins.
+                    if (event.type === 'response.output_item.added' && event.item?.type === 'message') {
                         if (!audioActiveRef.current) {
                             audioActiveRef.current = true;
                             setIsThinking(false);
-                            if (localAudioTrackRef.current) {
-                                localAudioTrackRef.current.enabled = false;
-                                setIsMicOpen(false);
-                            }
                             if (onAudioStarted) onAudioStarted();
                         }
                     }
@@ -243,6 +246,7 @@ export function useRealtimeVoice({
                         autoGainControl: true,
                     }
                 });
+                localStreamRef.current = ms;
                 const audioTrack = ms.getAudioTracks()[0];
                 localAudioTrackRef.current = audioTrack;
                 // isMicOpen will be set to true when the data channel opens and the connection is fully established
@@ -306,6 +310,11 @@ export function useRealtimeVoice({
         if (localAudioTrackRef.current) {
             localAudioTrackRef.current.stop();
             localAudioTrackRef.current = null;
+        }
+
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
         }
 
         if (pcRef.current) {
