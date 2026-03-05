@@ -52,7 +52,6 @@ export default function SpeakerSession({
         sendMessage,
         sendTextMessage,
         updateContext,
-        initAudio,
         isConnecting,
         isConnected,
         isThinking: isVoiceThinking,
@@ -145,7 +144,14 @@ export default function SpeakerSession({
         }
 
         if (tools.length === 0) return;
-        sendMessage('session.update', { session: { tools, tool_choice: 'auto' } });
+
+        // Add a 500ms delay to give OpenAI's Realtime Server time to initialize the connection context fully
+        // before we send session updates or initial greetings to prevent them from dropping.
+        const timeoutId = setTimeout(() => {
+            sendMessage('session.update', { session: { tools, tool_choice: 'auto' } });
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
     }, [isConnected, cardConfig.card_type, cardConfig.sounds, sendMessage]);
 
     // BGM: start when connected, fade out when disconnected
@@ -178,7 +184,6 @@ export default function SpeakerSession({
     // Entry point — user taps the start button (user gesture required for mic + audio unlock)
     const handleStart = () => {
         initTTSAudio();
-        initAudio(); // Initialize WebRTC audio element synchronously to bypass Safari autoplay block
         setIsStarted(true);
         if (cardConfig.use_realtime !== false) {
             connect();
@@ -202,7 +207,6 @@ export default function SpeakerSession({
             setIsStarted(false);
         } else {
             initTTSAudio();
-            initAudio(); // Initialize WebRTC audio element synchronously
             setIsStarted(true);
             connect();
         }
@@ -394,7 +398,13 @@ export default function SpeakerSession({
             ? "우리 이제 책 읽을 시간이야! 짧게 단문으로 신나게 첫인사를 건네줘."
             : "사용자가 처음 들어왔어. 대기 시간을 줄이기 위해 1~2초 이내로 끝날 수 있는 아주 짧고 활기찬 첫 인사를 딱 한 문장으로만 해줘.";
 
-        sendTextMessage(greetingMsg);
+        // Delay the initial interaction by 500ms to avoid the OpenAI race condition where the 
+        // actor hasn't fully attached to the session context on the server side.
+        const startTimer = setTimeout(() => {
+            sendTextMessage(greetingMsg);
+        }, 500);
+
+        return () => clearTimeout(startTimer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isConnected, bookData]);
 

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini-realtime-preview",
+                model: "gpt-4o-realtime-preview",
                 voice: voice_openai || "alloy",
                 instructions: system_prompt || "You are a helpful reading buddy.",
                 temperature: temperature || 0.8,
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
                     type: "server_vad",
                     threshold: 0.6,         // less hair-trigger (default 0.5)
                     prefix_padding_ms: 300,
-                    silence_duration_ms: 1200 // longer pause before AI speaks again
+                    silence_duration_ms: 2500 // Increased: Wait longer before AI interrupts
                 }
             }),
         });

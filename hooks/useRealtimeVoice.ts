@@ -50,19 +50,6 @@ export function useRealtimeVoice({
     const onFunctionCallRef = useRef(onFunctionCall);
     onFunctionCallRef.current = onFunctionCall;
 
-    const initAudio = useCallback(() => {
-        if (!audioElRef.current) {
-            const audioEl = document.createElement("audio");
-            audioEl.autoplay = true;
-            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
-            audioEl.style.display = "none";
-            // Prime the audio element for iOS Safari by playing it immediately during the user gesture
-            audioEl.play().catch(() => { });
-            document.body.appendChild(audioEl);
-            audioElRef.current = audioEl;
-        }
-    }, []);
-
     const connect = useCallback(async () => {
         if (isConnected || isConnecting) return;
         setIsConnecting(true);
@@ -97,23 +84,23 @@ export function useRealtimeVoice({
                 }
             };
 
-            // Create Audio Element for AI output and append to DOM (if not already created by initAudio)
-            if (!audioElRef.current) {
-                const audioEl = document.createElement("audio");
-                audioEl.autoplay = true;
-                audioEl.setAttribute("playsinline", "");
-                audioEl.style.display = "none";
-                document.body.appendChild(audioEl);
-                audioElRef.current = audioEl;
-            }
-            const audioEl = audioElRef.current;
+            // Create Audio Element for AI output and append to DOM
+            const audioEl = document.createElement("audio");
+            audioEl.autoplay = true;
+            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
+            audioEl.style.display = "none";
+            document.body.appendChild(audioEl);
+            audioElRef.current = audioEl;
 
             pc.ontrack = (e) => {
                 if (e.track.kind === 'audio') {
                     audioEl.srcObject = e.streams[0];
-                    // Explicit play() required on iOS Safari — autoplay alone is not enough
-                    audioEl.play().catch(err => console.warn("WebRTC audio play failed:", err));
+                    if (onAudioStarted) onAudioStarted();
                 }
+            };
+
+            audioEl.onended = () => {
+                if (onAudioEnded) onAudioEnded();
             };
 
             // 3. Open Data Channel for sending events
@@ -125,23 +112,6 @@ export function useRealtimeVoice({
             // channel readyState is still "connecting" at that point. Sending a message
             // there would silently fail (the channel drops messages when not open).
             dc.addEventListener("open", () => {
-                // Match the VAD settings from session creation and enable noise reduction.
-                // (session.update is needed because the sessions API doesn't expose
-                //  input_audio_noise_reduction at creation time.)
-                dc.send(JSON.stringify({
-                    type: 'session.update',
-                    session: {
-                        turn_detection: {
-                            type: "server_vad",
-                            threshold: 0.6,
-                            prefix_padding_ms: 300,
-                            silence_duration_ms: 1200,
-                            create_response: true,
-                        },
-                        input_audio_noise_reduction: { type: "near_field" },
-                    }
-                }));
-
                 setIsConnected(true);
                 setIsConnecting(false);
                 if (localAudioTrackRef.current) {
@@ -153,6 +123,17 @@ export function useRealtimeVoice({
             dc.addEventListener("message", (e) => {
                 try {
                     const event = JSON.parse(e.data);
+
+                    // ── Debug Logging ────────────────────────────────────────────
+                    if (!event.type.includes('delta')) {
+                        console.log(`[Realtime API] ${event.type}`, event);
+                    }
+                    if (event.type === 'response.audio.delta') {
+                        // Log first audio block of a response just to confirm we are getting audio bytes
+                        if (!audioActiveRef.current) {
+                            console.log(`[Realtime API] First audio bytes received!`, event);
+                        }
+                    }
 
                     // ── User voice activity ──────────────────────────────────────
                     if (event.type === 'input_audio_buffer.speech_started') {
@@ -199,6 +180,12 @@ export function useRealtimeVoice({
 
                     // Response fully generated — wait a bit for buffered audio to finish
                     if (event.type === 'response.done') {
+                        console.log("[Realtime API] Response Done details:", event.response?.status_details);
+                        if (event.response?.status_details?.error) {
+                            console.error("[Realtime API] Response Aborted with Error:", event.response.status_details.error);
+                            if (onError) onError(new Error(`AI Response Error: ${event.response.status_details.error.code}`));
+                        }
+
                         responseEndTimerRef.current = setTimeout(() => {
                             audioActiveRef.current = false;
                             setIsThinking(false);
@@ -383,7 +370,6 @@ export function useRealtimeVoice({
         sendMessage,
         sendTextMessage,
         updateContext,
-        initAudio,
         isConnecting,
         isConnected,
         isThinking,
