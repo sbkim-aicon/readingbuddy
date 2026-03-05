@@ -50,6 +50,19 @@ export function useRealtimeVoice({
     const onFunctionCallRef = useRef(onFunctionCall);
     onFunctionCallRef.current = onFunctionCall;
 
+    const initAudio = useCallback(() => {
+        if (!audioElRef.current) {
+            const audioEl = document.createElement("audio");
+            audioEl.autoplay = true;
+            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
+            audioEl.style.display = "none";
+            // Prime the audio element for iOS Safari by playing it immediately during the user gesture
+            audioEl.play().catch(() => { });
+            document.body.appendChild(audioEl);
+            audioElRef.current = audioEl;
+        }
+    }, []);
+
     const connect = useCallback(async () => {
         if (isConnected || isConnecting) return;
         setIsConnecting(true);
@@ -84,13 +97,16 @@ export function useRealtimeVoice({
                 }
             };
 
-            // Create Audio Element for AI output and append to DOM
-            const audioEl = document.createElement("audio");
-            audioEl.autoplay = true;
-            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
-            audioEl.style.display = "none";
-            document.body.appendChild(audioEl);
-            audioElRef.current = audioEl;
+            // Create Audio Element for AI output and append to DOM (if not already created by initAudio)
+            if (!audioElRef.current) {
+                const audioEl = document.createElement("audio");
+                audioEl.autoplay = true;
+                audioEl.setAttribute("playsinline", "");
+                audioEl.style.display = "none";
+                document.body.appendChild(audioEl);
+                audioElRef.current = audioEl;
+            }
+            const audioEl = audioElRef.current;
 
             pc.ontrack = (e) => {
                 if (e.track.kind === 'audio') {
@@ -367,6 +383,7 @@ export function useRealtimeVoice({
         sendMessage,
         sendTextMessage,
         updateContext,
+        initAudio,
         isConnecting,
         isConnected,
         isThinking,

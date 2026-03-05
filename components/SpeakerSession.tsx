@@ -52,6 +52,7 @@ export default function SpeakerSession({
         sendMessage,
         sendTextMessage,
         updateContext,
+        initAudio,
         isConnecting,
         isConnected,
         isThinking: isVoiceThinking,
@@ -177,6 +178,7 @@ export default function SpeakerSession({
     // Entry point — user taps the start button (user gesture required for mic + audio unlock)
     const handleStart = () => {
         initTTSAudio();
+        initAudio(); // Initialize WebRTC audio element synchronously to bypass Safari autoplay block
         setIsStarted(true);
         if (cardConfig.use_realtime !== false) {
             connect();
@@ -200,6 +202,7 @@ export default function SpeakerSession({
             setIsStarted(false);
         } else {
             initTTSAudio();
+            initAudio(); // Initialize WebRTC audio element synchronously
             setIsStarted(true);
             connect();
         }
