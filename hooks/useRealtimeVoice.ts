@@ -11,6 +11,7 @@ interface UseRealtimeVoiceProps {
     onAudioStarted?: () => void;
     onAudioEnded?: () => void;
     onUserSpeaking?: (isSpeaking: boolean) => void;
+    tools?: any[];
     // respond() sends the function output back to the model and triggers the next response.
     // Call it (optionally after a short delay) once you have processed the tool call.
     onFunctionCall?: (name: string, args: Record<string, unknown>, respond: (output: string) => void) => void;
@@ -26,6 +27,7 @@ export function useRealtimeVoice({
     onAudioStarted,
     onAudioEnded,
     onUserSpeaking,
+    tools,
     onFunctionCall,
     onError
 }: UseRealtimeVoiceProps) {
@@ -63,7 +65,8 @@ export function useRealtimeVoice({
                     card_id: cardId,
                     system_prompt: systemPrompt,
                     voice_openai: voice,
-                    temperature: temperature
+                    temperature: temperature,
+                    tools: tools
                 })
             });
 
@@ -299,7 +302,7 @@ export function useRealtimeVoice({
             setIsConnecting(false);
             if (onError) onError(error);
         }
-    }, [cardId, systemPrompt, voice, temperature, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError]);
+    }, [cardId, systemPrompt, voice, temperature, tools, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError]);
 
 
     const disconnect = useCallback(() => {

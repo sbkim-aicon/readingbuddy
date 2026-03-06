@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { system_prompt, voice_openai, temperature } = body;
+        const { system_prompt, voice_openai, temperature, tools } = body;
 
         // Fetch a WebRTC Ephemeral Token from OpenAI Realtime API
         // https://platform.openai.com/docs/guides/realtime-webrtc
@@ -19,6 +19,8 @@ export async function POST(req: Request) {
                 instructions: system_prompt || "You are a helpful reading buddy.",
                 temperature: temperature || 0.8,
                 modalities: ["audio", "text"],
+                tools: tools || undefined,
+                tool_choice: tools ? "auto" : undefined,
                 turn_detection: {
                     type: "server_vad",
                     threshold: 0.6,         // less hair-trigger (default 0.5)

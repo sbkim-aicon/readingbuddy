@@ -65,10 +65,35 @@ export default function SpeakerSession({
         onAudioStarted: () => setState("speaking"),
         onAudioEnded: () => setState("listening"),
         onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
-        onFunctionCall: (name, args, respond) => {
+        onFunctionCall: async (name, args, respond) => {
             if (name === 'play_sound') {
-                playSFX(args.name as string);
-                respond(JSON.stringify({ success: true }));
+                if (cardConfig.card_id === 'whats_that_sound') {
+                    // Dynamic ElevenLabs sound generation
+                    try {
+                        const res = await fetch('/api/elevenlabs/sound_effect', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: args.description })
+                        });
+                        const data = await res.json();
+                        if (data.url) {
+                            const audio = new Audio(data.url);
+                            audio.onended = () => {
+                                respond(JSON.stringify({ success: true, message: "Sound played." }));
+                            };
+                            await audio.play();
+                        } else {
+                            respond(JSON.stringify({ success: false, error: data.error }));
+                        }
+                    } catch (e: any) {
+                        console.error("Elevenlabs SFX error:", e);
+                        respond(JSON.stringify({ success: false, error: e.message }));
+                    }
+                } else {
+                    // Pre-defined local SFX for other cards
+                    playSFX(args.name as string);
+                    respond(JSON.stringify({ success: true }));
+                }
                 return;
             }
             if (name !== 'advance_session') return;
@@ -124,21 +149,30 @@ export default function SpeakerSession({
             });
         }
 
-        if (cardConfig.sounds) {
+        if (cardConfig.sounds || cardConfig.card_id === 'whats_that_sound') {
             tools.push({
                 type: 'function',
                 name: 'play_sound',
-                description: '효과음을 재생합니다. 게임 이벤트에 맞는 사운드를 선택하세요.',
+                description: cardConfig.card_id === 'whats_that_sound'
+                    ? 'ElevenLabs AI를 사용하여 주어진 영문 묘사에 맞는 실감나는 효과음을 즉시 생성하고 들려줍니다. (예: "Cinematic Braam, Horror", "Dog barking happily")'
+                    : '효과음을 재생합니다. 게임 이벤트에 맞는 사운드를 선택하세요.',
                 parameters: {
                     type: 'object',
-                    properties: {
-                        name: {
-                            type: 'string',
-                            enum: ['correct', 'wrong', 'hint', 'game_start', 'level_up', 'splash', 'goal'],
-                            description: '재생할 효과음: correct(정답), wrong(오답), hint(힌트), game_start(게임시작), level_up(레벨업), splash(물소리), goal(골)',
+                    properties: cardConfig.card_id === 'whats_that_sound'
+                        ? {
+                            description: {
+                                type: 'string',
+                                description: '생성할 사운드의 영문 묘사. (e.g. "Loud thunder and rain", "Squeaking rubber duck")',
+                            }
+                        }
+                        : {
+                            name: {
+                                type: 'string',
+                                enum: ['correct', 'wrong', 'hint', 'game_start', 'level_up', 'splash', 'goal'],
+                                description: '재생할 효과음: correct(정답), wrong(오답), hint(힌트), game_start(게임시작), level_up(레벨업), splash(물소리), goal(골)',
+                            },
                         },
-                    },
-                    required: ['name'],
+                    required: cardConfig.card_id === 'whats_that_sound' ? ['description'] : ['name'],
                 },
             });
         }

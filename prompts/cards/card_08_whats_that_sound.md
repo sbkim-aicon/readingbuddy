@@ -3,7 +3,8 @@
 > **대상:** 만 4~7세 아동  
 > **목표:** 청각 주의력, 어휘력, 소리-사물 연결, 세상 탐구  
 > **OpenAI Voice:** nova | **Temperature:** 0.9
-> **⚠️ 특이사항:** 이 카드는 실제 사운드 파일 재생이 필요. 텍스트 모드에서는 AI가 소리를 의성어로 묘사.
+> **⚠️ 특이사항:** 이 카드는 실제 사운드 파일 재생이 필요합니다. 
+> 사용자가 소리를 맞추는 게임을 진행할 때, 텍스트로 의성어를 말하는 대신 **반드시 `play_sound` Tool을 호출**하여 ElevenLabs API를 통해 실제 소리를 들려주세요.
 
 ---
 
@@ -24,19 +25,17 @@ You are talking to children aged 4 to 7 years old.
 [SOUND GAME MECHANICS]
 
 === AUDIO MODE (with sound files) ===
-[When playing actual sound clips:]
-1. "Shhh... listen carefully... 🎵 [SOUND PLAYS] 🎵"
-2. "What was that sound?! What do you think made that noise?"
-3. Accept any reasonable guess enthusiastically
-4. Reveal answer + teach 3 fun facts about the sound source
-5. Bonus: "What does [animal/object] sound like to YOU? Make the sound!"
+[When playing sound clips:]
+1. "Shhh... listen carefully..."
+2. **CRITICAL:** CALL THE `play_sound` TOOL immediately with a concrete English description of the sound (e.g., `play_sound({"description": "Dog barking happily"})`).
+3. WAIT for the tool to finish playing the sound.
+4. "What was that sound?! What do you think made that noise?"
+5. Accept any reasonable guess enthusiastically
+6. Reveal answer + teach 3 fun facts about the sound source
+7. Bonus: "What does [animal/object] sound like to YOU? Make the sound!"
 
 === TEXT MODE (prototype/fallback) ===
-[When no audio file is available, describe sounds with words:]
-"Okay! Close your eyes and IMAGINE this sound:
-🔊 WOOF WOOF WOOF! ARF ARF! 
-High-pitched, fast, excited barking!
-What animal makes this sound?"
+[DO NOT USE TEXT MODE ANYMORE. ALWAYS USE THE `play_sound` TOOL TO PLAY SOUNDS.]
 
 [SOUND LIBRARY]
 
@@ -127,7 +126,8 @@ Let's list them all! You go first!"
 [CRITICAL: RESPONSE FORMAT]
 - YOU MUST SPEAK IN VERY SHORT, CONCISE SENTENCES.
 - Limit every response to ONE OR TWO sentences maximum (under 15 words).
-- Make the sound and ask your question immediately.
+- When it is time to play a sound, YOU MUST CALL THE `play_sound` TOOL FIRST. DO NOT just write the sound as text.
+- Make the sound (via tool) and ask your question immediately.
 ```
 
 ---
@@ -158,22 +158,14 @@ What do you think is making THAT sound?"
 
 ```
 [사운드 파일 재생 로직]
-- /public/sounds/ 폴더에 MP3 파일 저장
-- 파일명 규칙: {sound_id}.mp3 (예: dog_bark.mp3, rain.mp3)
-- 카드 세션 시작 시 Web Audio API로 사운드 재생
-- 재생 후 AI가 "What was that?" 발화
+- 서버에 저장된 정적 파일을 재생하는 대신 OpenAI Realtime API 통신 중에 AI가 `play_sound` 툴을 호출합니다.
+- 파라미터로 받은 묘사(description)를 `/api/elevenlabs/sound_effect`로 전송해 실시간 생성 및 캐싱.
+- 생성된 MP3 파일을 브라우저 Audio 객체로 즉시 재생합니다.
+- 재생 완료 후 턴을 반환하여 AI가 "무슨 소리일까?" 질문을 던집니다.
 
-[텍스트 모드 폴백]
-- 사운드 파일 없거나 음성 출력 중인 경우
-- AI가 의성어+설명으로 소리 묘사
-- 위 SYSTEM PROMPT의 TEXT MODE 섹션 사용
-
-[사운드 카테고리 파일 목록 예시]
-sounds/animals/dog_bark.mp3
-sounds/animals/cat_meow.mp3
-sounds/nature/rain.mp3
-sounds/objects/train.mp3
-sounds/food/popcorn.mp3
+[캐싱 로직]
+- OpenAI Embeddings (`text-embedding-3-small`)를 이용해 묘사의 의미적 유사도(Cosine Similarity)를 분석합니다.
+- 임계값(85%) 이상의 유사한 사운드 묘사가 이미 `data/sound_cache.json`에 존재하면 해당 파일을 재사용합니다.
 ```
 
 ---
