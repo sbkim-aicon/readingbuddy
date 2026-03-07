@@ -75,15 +75,18 @@ export default function SpeakerSession({
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ text: args.description })
                         });
-                        const data = await res.json();
-                        if (data.url) {
-                            const audio = new Audio(data.url);
+                        if (!res.ok) {
+                            const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+                            respond(JSON.stringify({ success: false, error: err.error }));
+                        } else {
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const audio = new Audio(url);
                             audio.onended = () => {
+                                URL.revokeObjectURL(url);
                                 respond(JSON.stringify({ success: true, message: "Sound played." }));
                             };
                             await audio.play();
-                        } else {
-                            respond(JSON.stringify({ success: false, error: data.error }));
                         }
                     } catch (e: any) {
                         console.error("Elevenlabs SFX error:", e);
