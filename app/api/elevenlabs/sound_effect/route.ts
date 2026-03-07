@@ -17,10 +17,6 @@ interface CachedSound {
     created_at: string;
 }
 
-const elevenlabs = new ElevenLabsClient({
-    apiKey: process.env.ELEVENLABS_API_KEY,
-});
-
 async function getEmbedding(text: string): Promise<number[]> {
     const response = await fetch("https://api.openai.com/v1/embeddings", {
         method: "POST",
@@ -87,6 +83,9 @@ export async function POST(req: Request) {
         console.log(`[Sound Cache Miss] Generating new sound for: "${text}"`);
 
         // 5. Generate new sound using ElevenLabs
+        const elevenlabs = new ElevenLabsClient({
+            apiKey: process.env.ELEVENLABS_API_KEY,
+        });
         let audioStream;
         try {
             audioStream = await elevenlabs.textToSoundEffects.convert({
