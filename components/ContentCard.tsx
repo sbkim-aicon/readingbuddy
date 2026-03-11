@@ -1,6 +1,8 @@
+"use client";
+
 import Link from 'next/link';
 import { CardConfig } from '@/lib/types';
-import { Play } from 'lucide-react';
+import { Play, Download } from 'lucide-react';
 
 // Extract bg/fg colors from a placehold.co URL so we can render Korean text via CSS.
 function parsePlaceholdUrl(url: string): { bg: string; fg: string } | null {
@@ -12,6 +14,29 @@ function parsePlaceholdUrl(url: string): { bg: string; fg: string } | null {
 export default function ContentCard({ card }: { card: CardConfig }) {
     // If no cover image, use a colorful gradient placeholder
     const gradientClass = "bg-gradient-to-br from-indigo-400 to-purple-400";
+    
+    const isGeneratedStory = card.card_id.startsWith("story_") && card.cover_image;
+
+    const handleDownload = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!card.cover_image) return;
+        
+        try {
+            const response = await fetch(card.cover_image);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${card.title || 'story_cover'}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Failed to download image", err);
+        }
+    };
 
     const placeholdColors = card.cover_image ? parsePlaceholdUrl(card.cover_image) : null;
 
@@ -45,6 +70,17 @@ export default function ContentCard({ card }: { card: CardConfig }) {
                         Play Audio
                     </button>
                 </div>
+                
+                {/* Download Button Overlay for Generated Stories */}
+                {isGeneratedStory && (
+                    <button 
+                        onClick={handleDownload}
+                        title="표지 색칠공부 다운로드"
+                        className="absolute top-3 right-3 bg-white/80 hover:bg-white backdrop-blur-sm p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                    >
+                        <Download className="w-4 h-4 text-gray-700" />
+                    </button>
+                )}
             </div>
 
             {/* Text Content Below */}

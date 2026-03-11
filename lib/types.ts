@@ -7,7 +7,7 @@ export interface SoundConfig {
 
 export interface CardConfig {
   card_id: string;
-  card_type: "general" | "read_with_me";
+  card_type: "general" | "read_with_me" | "story_writer";
   title: string;
   subtitle: string;
   cover_image: string;
@@ -23,6 +23,7 @@ export interface CardConfig {
   voice_provider?: 'openai' | 'elevenlabs';
   elevenlabs_voice_id?: string;
   llm_model?: string;
+  is_listen_only?: boolean;
 }
 
 export type ReadingSessionPhase = "PRE" | "DURING_DIALOGIC" | "POST" | "END";

@@ -20,6 +20,7 @@ export default function SpeakerSession({
     const [inputText, setInputText] = useState("");
     const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
     const [isStarted, setIsStarted] = useState(false); // true after user taps start
+    const [isFinalizingStory, setIsFinalizingStory] = useState(false); // true when story is being generated
 
     // Reading session specific state
     const [bookData, setBookData] = useState<BookData | null>(null);
@@ -249,12 +250,16 @@ export default function SpeakerSession({
 
     // TEXT FALLBACK API — uses <audio> element for cross-browser compatibility
     const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+    const thinkingAudioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         return () => {
             ttsAudioRef.current?.pause();
             ttsAudioRef.current?.remove();
             ttsAudioRef.current = null;
+            thinkingAudioRef.current?.pause();
+            thinkingAudioRef.current?.remove();
+            thinkingAudioRef.current = null;
             disconnect();
         };
     }, [disconnect]);
@@ -267,7 +272,34 @@ export default function SpeakerSession({
             document.body.appendChild(el);
             ttsAudioRef.current = el;
         }
+        if (!thinkingAudioRef.current) {
+            const el = document.createElement('audio');
+            el.style.display = 'none';
+            // Pre-load the first thinking sound
+            el.src = '/sounds/thinking/story_thinking_1.mp3'; 
+            // Do NOT loop the thinking line (so it doesn't sound robotic repeating)
+            el.loop = false;
+            document.body.appendChild(el);
+            thinkingAudioRef.current = el;
+        }
     }, []);
+
+    useEffect(() => {
+        if (state === "thinking") {
+            if (thinkingAudioRef.current) {
+                // Pick a random thinking line to keep it fresh
+                const randomInt = Math.floor(Math.random() * 3) + 1;
+                thinkingAudioRef.current.src = `/sounds/thinking/story_thinking_${randomInt}.mp3`;
+                thinkingAudioRef.current.volume = 1.0;
+                thinkingAudioRef.current.play().catch(e => console.warn("Thinking audio play failed", e));
+            }
+        } else {
+            if (thinkingAudioRef.current) {
+                thinkingAudioRef.current.pause();
+                thinkingAudioRef.current.currentTime = 0;
+            }
+        }
+    }, [state]);
 
     const playAudioString = async (base64Audio: string) => {
         const audio = ttsAudioRef.current;
@@ -338,9 +370,37 @@ export default function SpeakerSession({
                 setSessionState(prev => prev ? { ...prev, ...data.session_state } : data.session_state);
             }
 
-            // Fetch TTS in background; play when ready
+            // Check if story is ready
+            if (data.story_data && data.story_data.story_ready) {
+                setIsFinalizingStory(true);
+                try {
+                    const finalizeRes = await fetch('/api/story/finalize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data.story_data)
+                    });
+                    const finalizeData = await finalizeRes.json();
+                    if (finalizeData.success) {
+                        // wait 3 seconds for TTS output before prompting user
+                        setTimeout(() => {
+                            if (confirm("책이 완성되었습니다! 내가 만든 동화책을 바로 읽으러 갈까요?")) {
+                                router.push("/");
+                            }
+                            setIsFinalizingStory(false);
+                            setState("idle");
+                        }, 4000);
+                    } else {
+                        throw new Error(finalizeData.error || "Failed to finalize");
+                    }
+                } catch (err) {
+                    console.error("Story finalize failed:", err);
+                    alert("이야기 책 생성 중에 오류가 발생했습니다 ㅠㅠ");
+                    setIsFinalizingStory(false);
+                }
+            }
+
+            // Fetch TTS in background; play when ready (Wait in "thinking" state)
             if (ttsAudioRef.current && data.response) {
-                setState("speaking");
                 fetch('/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -441,6 +501,17 @@ export default function SpeakerSession({
         return () => clearTimeout(startTimer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isConnected, bookData]);
+
+    if (isFinalizingStory) {
+        return (
+            <div className="flex flex-col h-screen w-full bg-white items-center justify-center p-8 text-center space-y-6">
+                <audio src="/sounds/magic_drawing.mp3" autoPlay loop className="hidden" />
+                <Loader2 className="w-16 h-16 text-blue-500 animate-spin" />
+                <h2 className="text-2xl font-bold text-gray-800">그림책을 뚝딱뚝딱 만들고 있어요!</h2>
+                <p className="text-gray-500">들리시나요? 작가님의 멋진 이야기 책 표지를<br/>마법 연필로 슥삭슥삭 그리고 있는 소리예요!<br/>조금만 기다려주세요...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="relative flex flex-col h-full w-full min-h-screen bg-white overflow-hidden">

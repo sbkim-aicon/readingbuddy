@@ -45,12 +45,22 @@ export async function POST(req: NextRequest) {
                 } else {
                     // Fallback to original file
                     let promptPath = "";
-                    if (phase === 'PRE') {
-                        promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 02 pre reading.md");
-                    } else if (phase === 'DURING_DIALOGIC') {
-                        promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 03 during dialogic.md");
-                    } else if (phase === 'POST') {
-                        promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 05 post reading.md");
+                    if (cardConfig.is_listen_only) {
+                        if (phase === 'PRE') {
+                            promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 02 pre reading_listen.md");
+                        } else if (phase === 'DURING_DIALOGIC') {
+                            promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 03 during dialogic_listen.md");
+                        } else if (phase === 'POST') {
+                            promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 05 post reading_listen.md");
+                        }
+                    } else {
+                        if (phase === 'PRE') {
+                            promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 02 pre reading.md");
+                        } else if (phase === 'DURING_DIALOGIC') {
+                            promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 03 during dialogic.md");
+                        } else if (phase === 'POST') {
+                            promptPath = path.join(process.cwd(), "prompts", "read_with_me", "Prompt 05 post reading.md");
+                        }
                     }
                     if (promptPath) {
                         systemPrompt = await fs.readFile(promptPath, "utf8");
@@ -109,18 +119,30 @@ TotalPages: ${bookData.book_metadata.total_pages}
         }
 
         // 2. Get OpenAI Text Response
-        const isJsonMode = cardConfig.card_type === 'read_with_me';
+        const isJsonMode = cardConfig.card_type === 'read_with_me' || cardConfig.card_type === 'story_writer';
         const modelToUse = cardConfig.llm_model || "gpt-4o-mini";
         const aiResponseRaw = await generateOpenAIChatResponse(systemPrompt, finalMessage, conversation_history, isJsonMode, modelToUse);
 
         let aiResponseText = aiResponseRaw;
         let newSessionState = null;
+        let storyData = null;
 
         if (isJsonMode) {
             try {
                 const parsed = JSON.parse(aiResponseRaw);
                 aiResponseText = parsed.response || "응답을 파싱할 수 없습니다.";
-                newSessionState = parsed.next_state;
+                if (cardConfig.card_type === 'read_with_me') {
+                    newSessionState = parsed.next_state;
+                } else if (cardConfig.card_type === 'story_writer') {
+                    if (parsed.story_ready) {
+                        storyData = {
+                            story_ready: true,
+                            title: parsed.title,
+                            final_story: parsed.final_story,
+                            image_prompt: parsed.image_prompt
+                        };
+                    }
+                }
             } catch {
                 console.error("Failed to parse JSON response:", aiResponseRaw);
                 aiResponseText = "응답 오류가 발생했습니다.";
@@ -132,7 +154,8 @@ TotalPages: ${bookData.book_metadata.total_pages}
             voice: cardConfig.voice_openai || "alloy",
             voice_provider: cardConfig.voice_provider || "openai",
             elevenlabs_voice_id: cardConfig.elevenlabs_voice_id,
-            ...(newSessionState && { session_state: newSessionState })
+            ...(newSessionState && { session_state: newSessionState }),
+            ...(storyData && { story_data: storyData })
         });
 
     } catch (error) {

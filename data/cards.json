@@ -1,5 +1,62 @@
 [
   {
+    "card_id": "story_12b1cd85",
+    "card_type": "read_with_me",
+    "title": "한국 꼬마 축구선수 시원의 꿈",
+    "subtitle": "우리가 함께 만든 동화책",
+    "cover_image": "/images/books/story_12b1cd85.png",
+    "persona_name": "Reading Buddy",
+    "prompt_file": null,
+    "book_data_path": "data/books/story_12b1cd85.json",
+    "voice_openai": "shimmer",
+    "temperature": 0.7,
+    "active": true,
+    "use_realtime": true,
+    "is_listen_only": false,
+    "sounds": {
+      "bgm": "sounds/Read%20with%20me_2.mp3",
+      "bgm_volume": 0.15
+    }
+  },
+  {
+    "card_id": "story_82462146",
+    "card_type": "read_with_me",
+    "title": "아기 상어의 먼 바다 모험",
+    "subtitle": "우리가 함께 만든 동화책",
+    "cover_image": "/images/books/story_82462146.png",
+    "persona_name": "Reading Buddy",
+    "prompt_file": null,
+    "book_data_path": "data/books/story_82462146.json",
+    "voice_openai": "shimmer",
+    "temperature": 0.7,
+    "active": true,
+    "use_realtime": true,
+    "is_listen_only": false,
+    "sounds": {
+      "bgm": "sounds/Read%20with%20me_2.mp3",
+      "bgm_volume": 0.15
+    }
+  },
+  {
+    "card_id": "story_0a1bdeb1",
+    "card_type": "read_with_me",
+    "title": "우주 비행사 토끼 토토와 말라버린 당근 행성",
+    "subtitle": "우리가 함께 만든 동화책",
+    "cover_image": "/images/books/story_0a1bdeb1.png",
+    "persona_name": "Reading Buddy",
+    "prompt_file": null,
+    "book_data_path": "data/books/story_0a1bdeb1.json",
+    "voice_openai": "shimmer",
+    "temperature": 0.7,
+    "active": true,
+    "use_realtime": true,
+    "is_listen_only": false,
+    "sounds": {
+      "bgm": "sounds/Read%20with%20me_2.mp3",
+      "bgm_volume": 0.15
+    }
+  },
+  {
     "card_id": "astro_explorer",
     "card_type": "general",
     "title": "Astro The Explorer AI Companion",
@@ -177,5 +234,19 @@
       "bgm": "sounds/Abyssal.mp3",
       "bgm_volume": 0.2
     }
+  },
+  {
+    "card_id": "story_writer",
+    "card_type": "story_writer",
+    "title": "이야기 작가님 방",
+    "subtitle": "아이와 AI의 창작 동화 만들기",
+    "cover_image": "/images/cards/story_writer.jpeg",
+    "persona_name": "편집장 지니",
+    "prompt_file": "prompts/cards/card_11_story_writer.md",
+    "voice_openai": "shimmer",
+    "temperature": 0.8,
+    "use_realtime": false,
+    "llm_model": "gpt-4o-mini",
+    "active": true
   }
 ]
