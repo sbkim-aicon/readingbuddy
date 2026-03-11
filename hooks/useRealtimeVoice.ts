@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 
 interface UseRealtimeVoiceProps {
     cardId: string;
+    cardType?: string;
     systemPrompt: string;
     voice: string;
     temperature: number;
@@ -20,6 +21,7 @@ interface UseRealtimeVoiceProps {
 
 export function useRealtimeVoice({
     cardId,
+    cardType,
     systemPrompt,
     voice,
     temperature,
@@ -63,6 +65,7 @@ export function useRealtimeVoice({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     card_id: cardId,
+                    card_type: cardType,
                     system_prompt: systemPrompt,
                     voice_openai: voice,
                     temperature: temperature,

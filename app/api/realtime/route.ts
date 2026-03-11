@@ -4,6 +4,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { system_prompt, voice_openai, temperature, tools } = body;
+        const isReadWithMe = body.card_type === 'read_with_me';
 
         // Fetch a WebRTC Ephemeral Token from OpenAI Realtime API
         // https://platform.openai.com/docs/guides/realtime-webrtc
@@ -23,9 +24,9 @@ export async function POST(req: Request) {
                 tool_choice: tools ? "auto" : undefined,
                 turn_detection: {
                     type: "server_vad",
-                    threshold: 0.6,         // less hair-trigger (default 0.5)
+                    threshold: isReadWithMe ? 0.8 : 0.6, // Higher threshold (less sensitive) for reading
                     prefix_padding_ms: 300,
-                    silence_duration_ms: 2500 // Increased: Wait longer before AI interrupts
+                    silence_duration_ms: isReadWithMe ? 3500 : 2500 // Wait even longer for children's reading
                 }
             }),
         });

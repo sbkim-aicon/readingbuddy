@@ -60,6 +60,7 @@ export default function SpeakerSession({
         micError
     } = useRealtimeVoice({
         cardId: cardConfig.card_id,
+        cardType: cardConfig.card_type,
         systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.",
         voice: cardConfig.voice_openai || "alloy",
         temperature: cardConfig.temperature || 0.8,
@@ -276,7 +277,7 @@ export default function SpeakerSession({
             const el = document.createElement('audio');
             el.style.display = 'none';
             // Pre-load the first thinking sound
-            el.src = '/sounds/thinking/story_thinking_1.mp3'; 
+            el.src = '/sounds/thinking/generic_thinking_1.mp3'; 
             // Do NOT loop the thinking line (so it doesn't sound robotic repeating)
             el.loop = false;
             document.body.appendChild(el);
@@ -285,13 +286,27 @@ export default function SpeakerSession({
     }, []);
 
     useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
         if (state === "thinking") {
             if (thinkingAudioRef.current) {
-                // Pick a random thinking line to keep it fresh
-                const randomInt = Math.floor(Math.random() * 3) + 1;
-                thinkingAudioRef.current.src = `/sounds/thinking/story_thinking_${randomInt}.mp3`;
-                thinkingAudioRef.current.volume = 1.0;
-                thinkingAudioRef.current.play().catch(e => console.warn("Thinking audio play failed", e));
+                // Wait 1.5 seconds before playing the cue
+                timeoutId = setTimeout(() => {
+                    // Decide between story-specific (1-3) or generic (1-4) randomly if we want a mix,
+                    // but for now, let's use the 4 generic ones broadly.
+                    const isStoryCard = cardConfig.card_id === "story_writer";
+                    
+                    if (isStoryCard && Math.random() > 0.5) {
+                        const randomInt = Math.floor(Math.random() * 3) + 1;
+                        thinkingAudioRef.current!.src = `/sounds/thinking/story_thinking_${randomInt}.mp3`;
+                    } else {
+                        const randomInt = Math.floor(Math.random() * 4) + 1;
+                        thinkingAudioRef.current!.src = `/sounds/thinking/generic_thinking_${randomInt}.mp3`;
+                    }
+
+                    thinkingAudioRef.current!.volume = 1.0;
+                    thinkingAudioRef.current!.play().catch(e => console.warn("Thinking audio play failed", e));
+                }, 1500); 
             }
         } else {
             if (thinkingAudioRef.current) {
@@ -299,7 +314,11 @@ export default function SpeakerSession({
                 thinkingAudioRef.current.currentTime = 0;
             }
         }
-    }, [state]);
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [state, cardConfig.card_id]);
 
     const playAudioString = async (base64Audio: string) => {
         const audio = ttsAudioRef.current;
