@@ -31,38 +31,43 @@ export async function POST(req: NextRequest) {
         await fs.mkdir(booksImageDir, { recursive: true });
         await fs.writeFile(imagePath, buffer);
 
-        // 3. Split final story into pages (simple split by paragraph/sentences)
-        const sentences = final_story.match(/[^.!?]+[.!?]+/g) || [final_story];
-        const pages = [];
-        let currentPageText = "";
-        let pageIndex = 0;
+        // 3. Use LLM to split story into logical pages and generate rich content
+        const splittingSystemPrompt = `
+당신은 어린이 동화책 편집자입니다. 제공된 동화 원고를 바탕으로 5~10페이지 분량의 풍부한 그림책 JSON 데이터를 만드세요.
+각 페이지는 이야기의 흐름(기승전결)에 따라 논리적으로 나누어야 하며, 아이들이 지루해하지 않도록 페이지당 2~3문장 정도의 분량을 유지하세요.
 
-        for (const sentence of sentences) {
-            // Group sentences into pages (~2 sentences per page for kids)
-            currentPageText += sentence.trim() + " ";
-            if (currentPageText.length > 80 || sentence === sentences[sentences.length - 1]) {
-                pages.push({
-                    page_number: pageIndex + 1,
-                    image_url: `/images/books/${imageFileName}`, // same cover image for all pages for now
-                    illustration_description: "A page of the story",
-                    text: currentPageText.trim(),
-                    tts_read_script: currentPageText.trim(),
-                    crowd_questions: [
-                        {
-                            question_type: "completion",
-                            question: "이 다음엔 어떤 일이 일어날까요?",
-                            scaffolding: {
-                                hint_if_wrong: "주인공이 어떻게 할 것 같아요?",
-                                simplified_version: "어떤 일이 생길까요?",
-                                deeper_question_if_correct: "우와, 정말 그럴 것 같네요! 왜 그렇게 생각했어요?"
-                            }
-                        }
-                    ]
-                });
-                currentPageText = "";
-                pageIndex++;
-            }
+반드시 아래 JSON 형식을 지켜야 합니다:
+{
+  "pages": [
+    {
+      "page_number": number,
+      "illustration_description": "이 페이지의 내용을 잘 나타내는 상세한 그림 묘사(DALL-E 프롬프트 기반)",
+      "text": "아이에게 들려줄 동화 본문 텍스트",
+      "tts_read_script": "텍스트와 동일(또는 약간 더 구어체)",
+      "crowd_questions": [
+        {
+          "question_type": "completion",
+          "question": "아이에게 던질 흥미로운 질문",
+          "scaffolding": {
+            "hint_if_wrong": "힌트",
+            "simplified_version": "쉬운 질문",
+            "deeper_question_if_correct": "심화 질문"
+          }
         }
+      ]
+    }
+  ]
+}
+`;
+        const splittingUserMsg = `제목: ${title}\n\n원고 내용:\n${final_story}`;
+        
+        const { generateOpenAIChatResponse } = await import("@/lib/openai-chat");
+        const llmResponseRaw = await generateOpenAIChatResponse(splittingSystemPrompt, splittingUserMsg, [], true, "gpt-4o");
+        const parsedLlmResponse = JSON.parse(llmResponseRaw);
+        const pages = parsedLlmResponse.pages.map((p: any) => ({
+            ...p,
+            image_url: `/images/books/${imageFileName}` // Global cover image for now
+        }));
 
         const bookData = {
             book_metadata: {

@@ -30,7 +30,7 @@
   "response": "작가님(아이)에게 건네는 호들갑스럽고 칭찬 가득한 대화 (어린이 눈높이에 맞게 작성). 초안 검토(5단계) 시에는 반드시 전체 흐름을 들려주고 피드백을 물어보세요.",
   "story_ready": boolean, // 7단계에 도달하여 아이가 완성에 동의했으면 true, 그 전(초안 검토 중 포함)이면 무조건 false
   "title": "story_ready가 true일 때만 작성. 만들어진 동화책의 멋진 제목.",
-  "final_story": "story_ready가 true일 때만 작성. 작가님이 만든 대화를 바탕으로 완성된 문어체 동화 이야기 내용 (약 3~4문단). 아이가 이해하기 쉬운 동화책 톤으로 작성하세요.",
+  "final_story": "story_ready가 true일 때만 작성. 작가님(아이)과 나눈 모든 대화의 세부 묘사와 재미있는 포인트들을 하나도 빠뜨리지 말고 최대한 풍성하게 작성하세요 (최소 10~15문장 이상). 아이의 상상력이 가미된 대사나 특징들을 그대로 살려 풍부한 문어체 동화 이야기로 만드세요. 단순히 요약하지 말고, 아이와 함께 만든 소중한 이야기를 긴 호흡의 동화책 한 권 분량으로 상세히 써야 합니다.",
   "image_prompt": "story_ready가 true일 때만 작성. DALL-E 3가 표지를 그릴 수 있는 영문 프롬프트. 주인공과 주요 장면에 대한 묘사를 포함하여, 아이들이 색칠할 수 있는 라인 드로잉 스타일로 작성할 것! (반드시 'A line drawing illustration for a kids coloring book. Simple, clean black outlines on a white background, coloring book style, no shading' 라는 문구를 포함하세요)."
 }
 ```

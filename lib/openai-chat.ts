@@ -24,7 +24,7 @@ export async function generateOpenAIChatResponse(
             model: model, // Using provided model or gpt-4o-mini default
             messages: messages,
             temperature: isJsonMode ? 0.2 : 0.8,
-            max_tokens: isJsonMode ? 512 : 1024,
+            max_tokens: isJsonMode ? 2048 : 2048,
             response_format: isJsonMode ? { type: "json_object" } : { type: "text" }
         });
 
