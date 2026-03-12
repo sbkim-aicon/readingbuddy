@@ -14,7 +14,7 @@ export async function generateOpenAIImage(prompt: string): Promise<string> {
             response_format: "url", // or b64_json
         });
 
-        const imageUrl = response.data[0].url;
+        const imageUrl = response?.data?.[0]?.url;
         if (!imageUrl) {
             throw new Error("No image URL returned from OpenAI");
         }
