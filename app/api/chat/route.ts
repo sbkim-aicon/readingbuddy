@@ -116,10 +116,23 @@ TotalPages: ${bookData.book_metadata.total_pages}
                 const promptPath = path.join(process.cwd(), cardConfig.prompt_file);
                 systemPrompt = await fs.readFile(promptPath, "utf8");
             }
+
+            if (body.session_state) {
+                systemPrompt += `\n\n[SESSION_STATE]\n${JSON.stringify(body.session_state, null, 2)}`;
+            }
+
+            if (cardConfig.use_json_mode) {
+                systemPrompt += `\n\n[RESPONSE FORMAT INSTRUCTIONS]
+You must respond in strict JSON format. Do NOT wrap it in markdown block quotes. Use the following schema:
+{
+  "response": "Your spoken dialogue here",
+  "session_state": { ... updated state ... }
+}`;
+            }
         }
 
         // 2. Get OpenAI Text Response
-        const isJsonMode = cardConfig.card_type === 'read_with_me' || cardConfig.card_type === 'story_writer';
+        const isJsonMode = cardConfig.card_type === 'read_with_me' || cardConfig.card_type === 'story_writer' || cardConfig.use_json_mode;
         const modelToUse = cardConfig.llm_model || "gpt-4o-mini";
         const aiResponseRaw = await generateOpenAIChatResponse(systemPrompt, finalMessage, conversation_history, isJsonMode, modelToUse);
 
@@ -129,10 +142,29 @@ TotalPages: ${bookData.book_metadata.total_pages}
 
         if (isJsonMode) {
             try {
-                const parsed = JSON.parse(aiResponseRaw);
+                // Robust parsing for JSON wrapped in markdown or with leading/trailing text
+                let cleanedJson = aiResponseRaw.trim();
+                
+                // Remove markdown code block wrappers if present
+                if (cleanedJson.startsWith("```json")) {
+                    cleanedJson = cleanedJson.replace(/^```json/, "").replace(/```$/, "");
+                } else if (cleanedJson.startsWith("```")) {
+                    cleanedJson = cleanedJson.replace(/^```/, "").replace(/```$/, "");
+                }
+                
+                // If it still contains text before or after the JSON { ... }
+                const firstBrace = cleanedJson.indexOf("{");
+                const lastBrace = cleanedJson.lastIndexOf("}");
+                if (firstBrace !== -1 && lastBrace !== -1) {
+                    cleanedJson = cleanedJson.substring(firstBrace, lastBrace + 1);
+                }
+
+                const parsed = JSON.parse(cleanedJson);
                 aiResponseText = parsed.response || "응답을 파싱할 수 없습니다.";
                 if (cardConfig.card_type === 'read_with_me') {
                     newSessionState = parsed.next_state;
+                } else if (cardConfig.use_json_mode && parsed.session_state) {
+                    newSessionState = parsed.session_state;
                 } else if (cardConfig.card_type === 'story_writer') {
                     if (parsed.story_ready) {
                         storyData = {
@@ -143,9 +175,15 @@ TotalPages: ${bookData.book_metadata.total_pages}
                         };
                     }
                 }
-            } catch {
-                console.error("Failed to parse JSON response:", aiResponseRaw);
-                aiResponseText = "응답 오류가 발생했습니다.";
+            } catch (err) {
+                console.error("Failed to parse JSON response:", aiResponseRaw, err);
+                // Fallback: search for "response" field if parsing failed
+                const responseMatch = aiResponseRaw.match(/"response":\s*"([^"]*)"/);
+                if (responseMatch) {
+                    aiResponseText = responseMatch[1];
+                } else {
+                    aiResponseText = "응답 형식 오류가 발생했습니다.";
+                }
             }
         }
 

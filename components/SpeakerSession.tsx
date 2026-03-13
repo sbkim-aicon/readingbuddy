@@ -25,6 +25,8 @@ export default function SpeakerSession({
     // Reading session specific state
     const [bookData, setBookData] = useState<BookData | null>(null);
     const [sessionState, setSessionState] = useState<ReadingSessionState | null>(null);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [isTimerFinished, setIsTimerFinished] = useState(false);
 
     // Sound manager — BGM + synthesized SFX
     const { playSFX, startBGM, stopBGM } = useSoundManager(cardConfig.sounds);
@@ -209,9 +211,59 @@ export default function SpeakerSession({
         }
     }, [isVoiceThinking, isConnected]);
 
+    // Timer Logic: Initialize timer when game_started is true
+    useEffect(() => {
+        // More robust check for game_started (handles boolean or string "true")
+        const isStarted = sessionState?.game_started === true || sessionState?.game_started === 'true';
+        
+        if (cardConfig.has_timer && isStarted && timeLeft === null && !isTimerFinished) {
+            setTimeLeft(cardConfig.timer_seconds || 180);
+            
+            // Switch BGM to ticktock when game starts (if configured)
+            // Note: SoundManager currently starts BGM on connect. 
+            // We'll manually override it here if timer starts.
+            const ticktockAudio = new Audio('/sounds/timer_ticktock.mp3');
+            ticktockAudio.loop = true;
+            ticktockAudio.volume = 0.2;
+            ticktockAudio.play().catch(e => console.warn("Timer BGM failed", e));
+            
+            timerAudioRef.current = ticktockAudio;
+        }
+    }, [cardConfig.has_timer, cardConfig.timer_seconds, sessionState?.game_started, timeLeft, isTimerFinished]);
+
+    // Countdown Interval
+    useEffect(() => {
+        if (timeLeft === null || timeLeft <= 0 || isTimerFinished) return;
+
+        const interval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev === null) return null;
+                if (prev <= 1) {
+                    setIsTimerFinished(true);
+                    clearInterval(interval);
+                    // Handle Game Over
+                    if (timerAudioRef.current) {
+                        timerAudioRef.current.pause();
+                        timerAudioRef.current = null;
+                    }
+                    handleSubmit(undefined, "[SYSTEM] 제한 시간이 다 종료되었어! 게임을 멈추고, 지금까지의 기록과 내용을 정리해서 아이와 즐겁게 대화하며 마무리해줘.");
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [timeLeft, isTimerFinished]);
+
 
     const handleEndSession = () => {
         if (confirm("대화를 종료하시겠습니까?")) {
+            if (timerAudioRef.current) {
+                timerAudioRef.current.pause();
+                timerAudioRef.current.remove();
+                timerAudioRef.current = null;
+            }
             disconnect();
             router.push("/");
         }
@@ -252,6 +304,7 @@ export default function SpeakerSession({
     // TEXT FALLBACK API — uses <audio> element for cross-browser compatibility
     const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
     const thinkingAudioRef = useRef<HTMLAudioElement | null>(null);
+    const timerAudioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         return () => {
@@ -261,6 +314,11 @@ export default function SpeakerSession({
             thinkingAudioRef.current?.pause();
             thinkingAudioRef.current?.remove();
             thinkingAudioRef.current = null;
+            if (timerAudioRef.current) {
+                timerAudioRef.current.pause();
+                timerAudioRef.current.remove();
+                timerAudioRef.current = null;
+            }
             disconnect();
         };
     }, [disconnect]);
@@ -288,7 +346,7 @@ export default function SpeakerSession({
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
 
-        if (state === "thinking") {
+        if (state === "thinking" && !cardConfig.disable_thinking_cue) {
             if (thinkingAudioRef.current) {
                 // Wait 1.5 seconds before playing the cue
                 timeoutId = setTimeout(() => {
@@ -601,6 +659,12 @@ export default function SpeakerSession({
                             {sessionState.phase === 'DURING_DIALOGIC' && `${sessionState.currentPageIndex + 1} / ${sessionState.totalPages} 페이지`}
                             {sessionState.phase === 'POST' && "책 다 읽음!"}
                             {sessionState.phase === 'END' && "독서 활동 완료"}
+                        </div>
+                    )}
+                    {timeLeft !== null && (
+                        <div className={`mt-1 px-4 py-1 font-bold rounded-full text-sm shadow-sm border flex items-center gap-2 ${timeLeft < 30 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                            <Loader2 className={`w-3 h-3 ${timeLeft > 0 ? 'animate-spin' : ''}`} />
+                            남은 시간: {Math.floor(timeLeft / 60)}분 {timeLeft % 60}초
                         </div>
                     )}
                 </div>

@@ -83,6 +83,9 @@
     "voice_openai": "coral",
     "temperature": 0.9,
     "active": true,
+    "use_realtime": false,
+    "use_json_mode": true,
+    "llm_model": "gpt-4o-mini",
     "sounds": {
       "bgm": "sounds/QUIZshow.mp3",
       "bgm_volume": 0.15
@@ -214,6 +217,9 @@
     "voice_openai": "echo",
     "temperature": 0.85,
     "active": true,
+    "use_realtime": false,
+    "use_json_mode": true,
+    "llm_model": "gpt-4o-mini",
     "sounds": {
       "bgm": "sounds/soccer.mp3",
       "bgm_volume": 0.15
@@ -230,6 +236,9 @@
     "voice_openai": "coral",
     "temperature": 0.8,
     "active": true,
+    "use_realtime": false,
+    "use_json_mode": true,
+    "llm_model": "gpt-4o-mini",
     "sounds": {
       "bgm": "sounds/Abyssal.mp3",
       "bgm_volume": 0.2
@@ -248,5 +257,69 @@
     "use_realtime": false,
     "llm_model": "gpt-4o-mini",
     "active": true
+  },
+  {
+    "card_id": "who_am_i",
+    "card_type": "general",
+    "title": "나는 누구일까요?",
+    "subtitle": "거꾸로 스무고개 | 특징 맞히기",
+    "cover_image": "/images/cards/whoami.png",
+    "persona_name": "제이미",
+    "prompt_file": "prompts/cards/card_12_who_am_i.md",
+    "voice_openai": "shimmer",
+    "temperature": 0.8,
+    "use_realtime": false,
+    "llm_model": "gpt-4o-mini",
+    "active": true,
+    "disable_thinking_cue": true,
+    "sounds": {
+      "bgm": "sounds/QUIZshow.mp3",
+      "bgm_volume": 0.15
+    },
+    "use_json_mode": true
+  },
+  {
+    "card_id": "market_game",
+    "card_type": "general",
+    "title": "시장에 가면...",
+    "subtitle": "기억력 게임 | 무엇이 있을까요?",
+    "cover_image": "/images/cards/market.png",
+    "persona_name": "기억대장",
+    "prompt_file": "prompts/cards/card_13_market_game.md",
+    "voice_openai": "alloy",
+    "temperature": 0.7,
+    "use_realtime": false,
+    "llm_model": "gpt-4o-mini",
+    "active": true,
+    "disable_thinking_cue": true,
+    "sounds": {
+      "bgm": "sounds/Read with me_2.mp3",
+      "bgm_volume": 0.15
+    },
+    "use_json_mode": true,
+    "has_timer": true,
+    "timer_seconds": 180
+  },
+  {
+    "card_id": "reverse_word",
+    "card_type": "general",
+    "title": "거꾸로 말해요",
+    "subtitle": "순발력 게임 | 뒤집어서 말하기",
+    "cover_image": "/images/cards/reverse.png",
+    "persona_name": "뒤집기",
+    "prompt_file": "prompts/cards/card_14_reverse_word.md",
+    "voice_openai": "nova",
+    "temperature": 0.7,
+    "use_realtime": false,
+    "llm_model": "gpt-4o-mini",
+    "active": true,
+    "disable_thinking_cue": true,
+    "sounds": {
+      "bgm": "sounds/QUIZshow.mp3",
+      "bgm_volume": 0.15
+    },
+    "use_json_mode": true,
+    "has_timer": true,
+    "timer_seconds": 180
   }
 ]
