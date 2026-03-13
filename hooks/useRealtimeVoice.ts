@@ -17,6 +17,7 @@ interface UseRealtimeVoiceProps {
     // Call it (optionally after a short delay) once you have processed the tool call.
     onFunctionCall?: (name: string, args: Record<string, unknown>, respond: (output: string) => void) => void;
     onError?: (error: Error) => void;
+    manualMicControl?: boolean;
 }
 
 export function useRealtimeVoice({
@@ -31,7 +32,8 @@ export function useRealtimeVoice({
     onUserSpeaking,
     tools,
     onFunctionCall,
-    onError
+    onError,
+    manualMicControl = false
 }: UseRealtimeVoiceProps) {
     const [isConnecting, setIsConnecting] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
@@ -53,6 +55,13 @@ export function useRealtimeVoice({
     // Always-current ref so the message handler never captures a stale callback
     const onFunctionCallRef = useRef(onFunctionCall);
     onFunctionCallRef.current = onFunctionCall;
+
+    const setMicEnabled = useCallback((enabled: boolean) => {
+        if (localAudioTrackRef.current) {
+            localAudioTrackRef.current.enabled = enabled;
+            setIsMicOpen(enabled);
+        }
+    }, []);
 
     const connect = useCallback(async () => {
         if (isConnected || isConnecting) return;
@@ -114,14 +123,18 @@ export function useRealtimeVoice({
             dcRef.current = dc;
 
             // CRITICAL: only declare "connected" once the data channel is actually open.
-            // setRemoteDescription() completes before ICE+DTLS finishes, so the data
-            // channel readyState is still "connecting" at that point. Sending a message
-            // there would silently fail (the channel drops messages when not open).
             dc.addEventListener("open", () => {
                 setIsConnected(true);
                 setIsConnecting(false);
                 if (localAudioTrackRef.current) {
-                    setIsMicOpen(true);
+                    // In manual mode, start disabled. In auto mode, start enabled.
+                    if (manualMicControl) {
+                        localAudioTrackRef.current.enabled = false;
+                        setIsMicOpen(false);
+                    } else {
+                        localAudioTrackRef.current.enabled = true;
+                        setIsMicOpen(true);
+                    }
                 }
                 console.log("WebRTC data channel open — session ready.");
             });
@@ -130,20 +143,8 @@ export function useRealtimeVoice({
                 try {
                     const event = JSON.parse(e.data);
 
-                    // ── Debug Logging ────────────────────────────────────────────
-                    if (!event.type.includes('delta')) {
-                        console.log(`[Realtime API] ${event.type}`, event);
-                    }
-                    if (event.type === 'response.audio.delta') {
-                        // Log first audio block of a response just to confirm we are getting audio bytes
-                        if (!audioActiveRef.current) {
-                            console.log(`[Realtime API] First audio bytes received!`, event);
-                        }
-                    }
-
                     // ── User voice activity ──────────────────────────────────────
                     if (event.type === 'input_audio_buffer.speech_started') {
-                        // Cancel any pending end-of-response timer (AI was interrupted)
                         if (responseEndTimerRef.current) {
                             clearTimeout(responseEndTimerRef.current);
                             responseEndTimerRef.current = null;
@@ -170,8 +171,6 @@ export function useRealtimeVoice({
                         }
                     }
 
-                    // WebRTC API skips `audio.delta` by default.
-                    // We use `output_item.added` to detect when the AI's spoken message actually begins.
                     if (event.type === 'response.output_item.added' && event.item?.type === 'message') {
                         if (!audioActiveRef.current) {
                             audioActiveRef.current = true;
@@ -186,16 +185,10 @@ export function useRealtimeVoice({
 
                     // Response fully generated — wait a bit for buffered audio to finish
                     if (event.type === 'response.done') {
-                        console.log("[Realtime API] Response Done details:", event.response?.status_details);
-                        if (event.response?.status_details?.error) {
-                            console.error("[Realtime API] Response Aborted with Error:", event.response.status_details.error);
-                            if (onError) onError(new Error(`AI Response Error: ${event.response.status_details.error.code}`));
-                        }
-
                         responseEndTimerRef.current = setTimeout(() => {
                             audioActiveRef.current = false;
                             setIsThinking(false);
-                            if (localAudioTrackRef.current) {
+                            if (localAudioTrackRef.current && !manualMicControl) {
                                 localAudioTrackRef.current.enabled = true;
                                 setIsMicOpen(true);
                             }
@@ -204,14 +197,12 @@ export function useRealtimeVoice({
                     }
 
                     // ── Function / tool calling ──────────────────────────────────
-                    // Step 1: capture name + call_id when the function call item appears
                     if (event.type === 'response.output_item.added' && event.item?.type === 'function_call') {
                         pendingFunctionCallRef.current = {
                             name: event.item.name,
                             callId: event.item.call_id,
                         };
                     }
-                    // Step 2: all arguments have streamed in — invoke handler
                     if (event.type === 'response.function_call_arguments.done') {
                         const pending = pendingFunctionCallRef.current;
                         const handler = onFunctionCallRef.current;
@@ -219,7 +210,6 @@ export function useRealtimeVoice({
                             try {
                                 const args = JSON.parse(event.arguments || '{}') as Record<string, unknown>;
                                 const callId = pending.callId;
-                                // respond() sends the result back and lets the model continue
                                 const respond = (output: string) => {
                                     if (!dcRef.current || dcRef.current.readyState !== 'open') return;
                                     dcRef.current.send(JSON.stringify({
@@ -258,10 +248,8 @@ export function useRealtimeVoice({
                 localStreamRef.current = ms;
                 const audioTrack = ms.getAudioTracks()[0];
                 localAudioTrackRef.current = audioTrack;
-                // isMicOpen will be set to true when the data channel opens and the connection is fully established
                 ms.getTracks().forEach((track) => pc.addTrack(track, ms));
             } catch (err: any) {
-                // Mic denied — continue; text input + AI voice output still work
                 console.warn("Microphone access denied or not available", err);
                 const msg = err?.name === "NotAllowedError"
                     ? "마이크 권한이 거부됐어요. 브라우저 주소창 옆 자물쇠 아이콘에서 마이크를 허용해주세요."
@@ -286,7 +274,7 @@ export function useRealtimeVoice({
             });
 
             if (!sdpResponse.ok) {
-                const errText = await sdpResponse.text();
+                const errText = await sdpResponse.ok ? "" : await sdpResponse.text();
                 throw new Error("Failed to connect SDP: " + errText);
             }
 
@@ -295,9 +283,6 @@ export function useRealtimeVoice({
                 sdp: await sdpResponse.text(),
             };
 
-            // ICE + DTLS negotiation happens in the background after this.
-            // setIsConnected(true) will be called from dc.onopen once the
-            // data channel is actually ready to send.
             await pc.setRemoteDescription(answer);
 
         } catch (error: any) {
@@ -305,7 +290,7 @@ export function useRealtimeVoice({
             setIsConnecting(false);
             if (onError) onError(error);
         }
-    }, [cardId, systemPrompt, voice, temperature, tools, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError]);
+    }, [cardId, cardType, systemPrompt, voice, temperature, tools, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError, manualMicControl]);
 
 
     const disconnect = useCallback(() => {
@@ -376,6 +361,7 @@ export function useRealtimeVoice({
         sendMessage,
         sendTextMessage,
         updateContext,
+        setMicEnabled,
         isConnecting,
         isConnected,
         isThinking,

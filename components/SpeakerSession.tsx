@@ -49,58 +49,86 @@ export default function SpeakerSession({
     }, [cardConfig]);
 
     // WebRTC Realtime Voice Hook
-    const {
-        connect,
-        disconnect,
-        sendMessage,
-        sendTextMessage,
-        updateContext,
-        isConnecting,
-        isConnected,
-        isThinking: isVoiceThinking,
-        isMicOpen,
-        micError
-    } = useRealtimeVoice({
-        cardId: cardConfig.card_id,
-        cardType: cardConfig.card_type,
-        systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.",
-        voice: cardConfig.voice_openai || "alloy",
-        temperature: cardConfig.temperature || 0.8,
-        onAudioStarted: () => setState("speaking"),
-        onAudioEnded: () => setState("listening"),
-        onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
-        onFunctionCall: async (name, args, respond) => {
-            if (name === 'play_sound') {
-                if (cardConfig.card_id === 'whats_that_sound') {
-                    // Dynamic ElevenLabs sound generation
-                    try {
-                        const res = await fetch('/api/elevenlabs/sound_effect', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ text: args.description })
-                        });
-                        const data = await res.json();
-                        if (data.url) {
-                            const audio = new Audio(data.url);
-                            audio.onended = () => {
-                                respond(JSON.stringify({ success: true, message: "Sound played." }));
-                            };
-                            await audio.play();
-                        } else {
-                            respond(JSON.stringify({ success: false, error: data.error }));
-                        }
-                    } catch (e: any) {
-                        console.error("Elevenlabs SFX error:", e);
-                        respond(JSON.stringify({ success: false, error: e.message }));
+    const checkAnswerTool = {
+        name: "check_answer",
+        description: "Verifies the child's answer programmatically for better accuracy. Call this to check if the child said the right thing.",
+        parameters: {
+            type: "object",
+            properties: {
+                target_word: { type: "string", description: "The word to check (e.g., the word to reverse, or the secret identity)." },
+                user_input: { type: "string", description: "What the child actually said." },
+                context: { 
+                    type: "object",
+                    properties: {
+                        list: { type: "array", items: { type: "string" }, description: "For Card 13, the previous list of items." }
                     }
-                } else {
-                    // Pre-defined local SFX for other cards
-                    playSFX(args.name as string);
-                    respond(JSON.stringify({ success: true }));
                 }
-                return;
+            },
+            required: ["target_word", "user_input"]
+        }
+    };
+
+    const handleFunctionCall = async (name: string, args: any, respond: (output: string) => void) => {
+        if (name === "check_answer") {
+            const { target_word, user_input, context } = args;
+            const cardId = cardConfig.card_id;
+            let isCorrect = false;
+            let reason = "";
+
+            if (cardId === 'card_14_reverse_word') {
+                const reversed = target_word.split('').reverse().join('').replace(/\s/g, '');
+                const userText = user_input.replace(/\s/g, '');
+                isCorrect = reversed === userText;
+                reason = isCorrect ? "Correctly reversed." : `Expected ${reversed} but got ${userText}`;
+            } else if (cardId === 'card_13_market_game') {
+                const prevList = context?.list || [];
+                const userItems = user_input.split(/[,\s]+/).filter(Boolean);
+                if (userItems.length === prevList.length + 1) {
+                    const matchesPrev = prevList.every((item: string, i: number) => userItems[i].includes(item) || item.includes(userItems[i]));
+                    isCorrect = matchesPrev;
+                    reason = isCorrect ? "Added one item correctly." : "Wait, you missed some earlier items!";
+                } else {
+                    reason = `Expected ${prevList.length + 1} items, but heard ${userItems.length}.`;
+                }
+            } else if (cardId === 'card_12_who_am_i') {
+                isCorrect = user_input.replace(/\s/g, '').includes(target_word.replace(/\s/g, ''));
+                reason = isCorrect ? "Guessed correctly!" : "Not quite.";
             }
-            if (name !== 'advance_session') return;
+
+            respond(JSON.stringify({ is_correct: isCorrect, reason }));
+            return;
+        }
+
+        if (name === 'play_sound') {
+            if (cardConfig.card_id === 'whats_that_sound') {
+                try {
+                    const res = await fetch('/api/elevenlabs/sound_effect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: args.description })
+                    });
+                    const data = await res.json();
+                    if (data.url) {
+                        const audio = new Audio(data.url);
+                        audio.onended = () => {
+                            respond(JSON.stringify({ success: true, message: "Sound played." }));
+                        };
+                        await audio.play();
+                    } else {
+                        respond(JSON.stringify({ success: false, error: data.error }));
+                    }
+                } catch (e: any) {
+                    console.error("Elevenlabs SFX error:", e);
+                    respond(JSON.stringify({ success: false, error: e.message }));
+                }
+            } else {
+                playSFX(args.name as string);
+                respond(JSON.stringify({ success: true }));
+            }
+            return;
+        }
+
+        if (name === 'advance_session') {
             const newPhase = args.phase as ReadingSessionPhase;
             const newPageIndex = typeof args.currentPageIndex === 'number' ? args.currentPageIndex : undefined;
             setSessionState(prev => {
@@ -111,10 +139,35 @@ export default function SpeakerSession({
                     ...(newPageIndex !== undefined ? { currentPageIndex: newPageIndex } : {}),
                 };
             });
-            // Small delay lets the session.update (triggered by sessionState change above)
-            // reach the server before response.create fires the next AI turn.
             setTimeout(() => respond(JSON.stringify({ success: true, phase: newPhase })), 150);
-        },
+            return;
+        }
+    };
+
+    const {
+        connect,
+        disconnect,
+        sendMessage,
+        sendTextMessage,
+        updateContext,
+        isConnecting,
+        isConnected,
+        isThinking: isVoiceThinking,
+        isMicOpen,
+        micError,
+        setMicEnabled
+    } = useRealtimeVoice({
+        cardId: cardConfig.card_id,
+        cardType: cardConfig.card_type,
+        systemPrompt: cardConfig.system_prompt || "You are a friendly reading companion.",
+        voice: cardConfig.voice_openai || "alloy",
+        temperature: cardConfig.temperature || 0.8,
+        manualMicControl: ['card_12_who_am_i', 'card_13_market_game', 'card_14_reverse_word'].includes(cardConfig.card_id),
+        tools: [checkAnswerTool],
+        onFunctionCall: handleFunctionCall,
+        onAudioStarted: () => setState("speaking"),
+        onAudioEnded: () => setState("listening"),
+        onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
         onError: (err) => {
             console.error(err);
             setState("error");
@@ -129,6 +182,28 @@ export default function SpeakerSession({
     useEffect(() => {
         if (!isConnected) return;
         const tools: object[] = [];
+
+        if (['card_12_who_am_i', 'card_13_market_game', 'card_14_reverse_word'].includes(cardConfig.card_id)) {
+            tools.push({
+                type: 'function',
+                name: 'check_answer',
+                description: 'Verifies the child\'s answer programmatically for better accuracy. Call this to check if the child said the right thing.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        target_word: { type: 'string', description: 'The word to check (e.g., the word to reverse, or the secret identity).' },
+                        user_input: { type: 'string', description: 'What the child actually said.' },
+                        context: { 
+                            type: 'object',
+                            properties: {
+                                list: { type: 'array', items: { type: 'string' }, description: 'For Card 13, the previous list of items.' }
+                            }
+                        }
+                    },
+                    required: ['target_word', 'user_input']
+                }
+            });
+        }
 
         if (cardConfig.card_type === 'read_with_me') {
             tools.push({
@@ -266,6 +341,20 @@ export default function SpeakerSession({
             }
             disconnect();
             router.push("/");
+        }
+    };
+
+    const isPTTMode = ['card_12_who_am_i', 'card_13_market_game', 'card_14_reverse_word'].includes(cardConfig.card_id);
+
+    const handlePTTStart = () => {
+        if (isPTTMode && isConnected && state === "listening") {
+            setMicEnabled(true);
+        }
+    };
+
+    const handlePTTEnd = () => {
+        if (isPTTMode && isConnected) {
+            setMicEnabled(false);
         }
     };
 
@@ -673,7 +762,11 @@ export default function SpeakerSession({
             {/* Main Center Area: Huge Speaker Character */}
             <div className="flex-1 flex items-center justify-center p-6 relative">
                 <div className="z-0 transform scale-125 md:scale-150 transition-transform duration-500 ease-out mt-12 md:mt-0">
-                    <SpeakerCharacter state={state} />
+                    <SpeakerCharacter 
+                        state={state} 
+                        onPTTStart={handlePTTStart}
+                        onPTTEnd={handlePTTEnd}
+                    />
                 </div>
             </div>
 
