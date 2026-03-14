@@ -68,7 +68,32 @@ export function useRealtimeVoice({
         setIsConnecting(true);
 
         try {
-            // 1. Get an ephemeral session token from our Next.js backend
+            // ─── STEP 1: Capture microphone FIRST ────────────────────────────────
+            // iOS Safari/Chrome require getUserMedia to be called as close to the
+            // user gesture as possible. Calling it after an await fetch() causes
+            // iOS to lose the user-gesture activation token and silently deny access.
+            let localStream: MediaStream | null = null;
+            try {
+                setMicError(null);
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    }
+                });
+                localStreamRef.current = localStream;
+                localAudioTrackRef.current = localStream.getAudioTracks()[0];
+            } catch (err: any) {
+                console.warn("Microphone access denied or not available", err);
+                const msg = err?.name === "NotAllowedError"
+                    ? "마이크 권한이 거부됐어요. 브라우저 주소창 옆 자물쇠 아이콘에서 마이크를 허용해주세요."
+                    : "마이크를 사용할 수 없어요. 텍스트로 대화할 수 있습니다.";
+                setMicError(msg);
+                // Continue without mic — text-only mode remains available
+            }
+
+            // ─── STEP 2: Get an ephemeral session token from our Next.js backend ─
             const tokenResponse = await fetch('/api/realtime', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -87,7 +112,7 @@ export function useRealtimeVoice({
             const data = await tokenResponse.json();
             const EPHEMERAL_KEY = data.client_secret.value;
 
-            // 2. Setup WebRTC Peer Connection
+            // ─── STEP 3: Setup WebRTC Peer Connection ────────────────────────────
             const pc = new RTCPeerConnection();
             pcRef.current = pc;
 
@@ -99,10 +124,14 @@ export function useRealtimeVoice({
                 }
             };
 
-            // Create Audio Element for AI output and append to DOM
+            // ─── STEP 4: Create Audio Element for AI output ──────────────────────
+            // iOS requires:
+            //   • playsinline — prevents fullscreen player takeover
+            //   • explicit .play() after srcObject is set — autoplay alone is not
+            //     honoured for MediaStream on iOS Safari/Chrome
             const audioEl = document.createElement("audio");
             audioEl.autoplay = true;
-            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
+            audioEl.setAttribute("playsinline", "");
             audioEl.style.display = "none";
             document.body.appendChild(audioEl);
             audioElRef.current = audioEl;
@@ -110,7 +139,9 @@ export function useRealtimeVoice({
             pc.ontrack = (e) => {
                 if (e.track.kind === 'audio') {
                     audioEl.srcObject = e.streams[0];
-                    if (onAudioStarted) onAudioStarted();
+                    // Explicitly call play() — iOS Safari will not autoplay a
+                    // MediaStream even when the autoplay attribute is set.
+                    audioEl.play().catch(err => console.warn("WebRTC audio play failed:", err));
                 }
             };
 
@@ -118,7 +149,7 @@ export function useRealtimeVoice({
                 if (onAudioEnded) onAudioEnded();
             };
 
-            // 3. Open Data Channel for sending events
+            // ─── STEP 5: Open Data Channel for sending events ────────────────────
             const dc = pc.createDataChannel("oai-events");
             dcRef.current = dc;
 
@@ -235,29 +266,13 @@ export function useRealtimeVoice({
                 }
             });
 
-            // 4. Capture local microphone audio
-            try {
-                setMicError(null);
-                const ms = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true,
-                    }
-                });
-                localStreamRef.current = ms;
-                const audioTrack = ms.getAudioTracks()[0];
-                localAudioTrackRef.current = audioTrack;
-                ms.getTracks().forEach((track) => pc.addTrack(track, ms));
-            } catch (err: any) {
-                console.warn("Microphone access denied or not available", err);
-                const msg = err?.name === "NotAllowedError"
-                    ? "마이크 권한이 거부됐어요. 브라우저 주소창 옆 자물쇠 아이콘에서 마이크를 허용해주세요."
-                    : "마이크를 사용할 수 없어요. 텍스트로 대화할 수 있습니다.";
-                setMicError(msg);
+            // ─── STEP 6: Add pre-acquired mic tracks to the peer connection ──────
+            // Tracks must be added before createOffer() so they are included in SDP.
+            if (localStream) {
+                localStream.getTracks().forEach((track) => pc.addTrack(track, localStream!));
             }
 
-            // 5. Create Offer and Send it to OpenAI WebRTC Endpoint
+            // ─── STEP 7: Create Offer and Send it to OpenAI WebRTC Endpoint ─────
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
