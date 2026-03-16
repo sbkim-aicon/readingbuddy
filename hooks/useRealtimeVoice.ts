@@ -68,6 +68,22 @@ export function useRealtimeVoice({
         setIsConnecting(true);
 
         try {
+            // ─── AUDIO ELEMENT PRE-INIT (iOS muted-autoplay unlock) ──────────────
+            // iOS allows muted autoplay unconditionally (no user-gesture required).
+            // Starting playback now — before any await — means when srcObject is set
+            // later (after async WebRTC negotiation), iOS treats the unmute as a
+            // continuation of existing playback rather than a new autoplay request,
+            // so it does not block the AI audio.
+            const audioEl = document.createElement("audio");
+            audioEl.muted = true;
+            audioEl.setAttribute("playsinline", "");
+            audioEl.style.display = "none";
+            // Tiny silent WAV so play() resolves immediately with no media error.
+            audioEl.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+            document.body.appendChild(audioEl);
+            audioElRef.current = audioEl;
+            audioEl.play().catch(() => {}); // muted autoplay: always permitted on iOS
+
             // ─── STEP 1: Capture microphone FIRST ────────────────────────────────
             // iOS Safari/Chrome require getUserMedia to be called as close to the
             // user gesture as possible. Calling it after an await fetch() causes
@@ -124,23 +140,15 @@ export function useRealtimeVoice({
                 }
             };
 
-            // ─── STEP 4: Create Audio Element for AI output ──────────────────────
-            // iOS requires:
-            //   • playsinline — prevents fullscreen player takeover
-            //   • explicit .play() after srcObject is set — autoplay alone is not
-            //     honoured for MediaStream on iOS Safari/Chrome
-            const audioEl = document.createElement("audio");
-            audioEl.autoplay = true;
-            audioEl.setAttribute("playsinline", "");
-            audioEl.style.display = "none";
-            document.body.appendChild(audioEl);
-            audioElRef.current = audioEl;
-
+            // ─── STEP 4: Wire AI audio output to the pre-created audio element ───
+            // audioEl was created and started (muted) at the top of this function.
+            // Assigning srcObject + unmuting here is treated by iOS as a continuation
+            // of the existing playback session — not a new autoplay — so it is allowed
+            // even though we are now deep inside async WebRTC negotiation.
             pc.ontrack = (e) => {
                 if (e.track.kind === 'audio') {
                     audioEl.srcObject = e.streams[0];
-                    // Explicitly call play() — iOS Safari will not autoplay a
-                    // MediaStream even when the autoplay attribute is set.
+                    audioEl.muted = false; // unmute: the element is already playing
                     audioEl.play().catch(err => console.warn("WebRTC audio play failed:", err));
                 }
             };
