@@ -6,6 +6,7 @@ import { Send, X, Mic, MicOff, Loader2 } from "lucide-react";
 import { CardConfig, BookData, ReadingSessionState, ReadingPhasePrompts, ReadingSessionPhase } from "@/lib/types";
 import SpeakerCharacter, { SpeakerState } from "./SpeakerCharacter";
 import { useRealtimeVoice } from "@/hooks/useRealtimeVoice";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSoundManager } from "@/hooks/useSoundManager";
 
 export default function SpeakerSession({
@@ -347,12 +348,23 @@ export default function SpeakerSession({
     const isPTTMode = ['card_12_who_am_i', 'card_13_market_game', 'card_14_reverse_word'].includes(cardConfig.card_id);
 
     const handlePTTStart = () => {
+        if (isNonRealtime) {
+            // For non-realtime cards: tap the character to trigger device STT
+            if (isSpeechSupported && isStarted && state !== "thinking" && state !== "speaking") {
+                startSTT();
+            }
+            return;
+        }
         if (isPTTMode && isConnected && state === "listening") {
             setMicEnabled(true);
         }
     };
 
     const handlePTTEnd = () => {
+        if (isNonRealtime) {
+            // Web Speech API on iOS auto-stops on silence — don't abort early
+            return;
+        }
         if (isPTTMode && isConnected) {
             setMicEnabled(false);
         }
@@ -374,8 +386,16 @@ export default function SpeakerSession({
     };
 
     const handleMicToggle = () => {
-        if (cardConfig.use_realtime === false) {
-            alert("이 카드는 실시간 음성(단방향 마이크) 기능을 지원하지 않습니다. 텍스트로 대화해주세요.");
+        if (isNonRealtime) {
+            if (!isSpeechSupported) {
+                alert("이 브라우저는 음성 인식을 지원하지 않습니다. 텍스트로 입력해주세요.");
+                return;
+            }
+            if (isSTTListening) {
+                stopSTT();
+            } else if (isStarted && state !== "thinking" && state !== "speaking") {
+                startSTT();
+            }
             return;
         }
 
@@ -389,6 +409,43 @@ export default function SpeakerSession({
         }
     };
 
+
+    // ── Device STT (Web Speech API) for non-realtime cards (12, 13, 14) ──────────
+    // These cards use use_realtime: false, so we integrate the native device STT
+    // via webkitSpeechRecognition (supported on iOS Safari, Chrome on iOS, and desktop).
+    const isNonRealtime = cardConfig.use_realtime === false;
+
+    // A ref so the STT callback can always call the latest handleSubmit without
+    // being defined before it (handleSubmit is defined further down in this file).
+    const handleSubmitRef = useRef<((...args: any[]) => Promise<void>) | null>(null);
+
+    const { isListening: isSTTListening, isSupported: isSpeechSupported, startListening: startSTT, stopListening: stopSTT } = useSpeechRecognition({
+        lang: 'ko-KR',
+        onResult: (transcript) => {
+            // Show the user's spoken text in the chat history
+            setMessages(prev => [...prev, { role: 'user', content: transcript }]);
+            setState("thinking");
+            // Submit to the non-realtime chat API
+            handleSubmitRef.current?.(undefined, transcript);
+        },
+        onError: (error) => {
+            console.warn("STT error:", error);
+        }
+    });
+
+    // Sync character animation with STT state for non-realtime cards
+    const prevSTTListeningRef = useRef(false);
+    useEffect(() => {
+        if (!isNonRealtime) return;
+        if (isSTTListening) {
+            prevSTTListeningRef.current = true;
+            setState("listening");
+        } else if (prevSTTListeningRef.current) {
+            prevSTTListeningRef.current = false;
+            // If no result was received, return to idle (not speaking/thinking)
+            setState(prev => prev === "listening" ? "idle" : prev);
+        }
+    }, [isSTTListening, isNonRealtime]);
 
     // TEXT FALLBACK API — uses <audio> element for cross-browser compatibility
     const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -591,6 +648,9 @@ export default function SpeakerSession({
         }
     };
 
+    // Keep the ref pointing to the latest handleSubmit so STT callback can call it
+    handleSubmitRef.current = handleSubmit;
+
     // Build and push the system prompt whenever the reading phase or page changes.
     // Base: TEMP .md file for the current phase (loaded server-side).
     // Appended: live SESSION_CONTEXT block with the relevant book/page data.
@@ -706,7 +766,11 @@ export default function SpeakerSession({
                         )}
 
                         <p className="text-gray-400 text-sm text-center leading-relaxed">
-                            버튼을 누르면 마이크가 켜지고<br />AI와 실시간 음성 대화가 시작됩니다.
+                            {isNonRealtime ? (
+                                <>버튼을 누르면 게임이 시작됩니다.<br />마이크 버튼으로 목소리로 대답하세요.</>
+                            ) : (
+                                <>버튼을 누르면 마이크가 켜지고<br />AI와 실시간 음성 대화가 시작됩니다.</>
+                            )}
                         </p>
                     </div>
                 </div>
@@ -785,20 +849,25 @@ export default function SpeakerSession({
                 <form onSubmit={handleSubmit} className="flex gap-3 bg-white p-3 md:p-4 rounded-3xl shadow-lg border border-gray-100 items-center">
                     <button
                         type="button"
-                        disabled={isConnecting || cardConfig.use_realtime === false}
+                        disabled={isConnecting || (isNonRealtime && !isSpeechSupported)}
                         className={`p-3 md:p-4 rounded-full transition-colors shrink-0 disabled:opacity-50
-                            ${cardConfig.use_realtime === false ? 'bg-gray-100 text-gray-400' :
-                                isConnected && isMicOpen ? 'bg-green-100 text-green-600 hover:bg-green-200' :
-                                    isConnected && !isMicOpen ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
-                                        'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                            ${isNonRealtime && !isSpeechSupported ? 'bg-gray-100 text-gray-400' :
+                                isNonRealtime && isSTTListening ? 'bg-green-100 text-green-600 hover:bg-green-200 animate-pulse' :
+                                    isNonRealtime ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' :
+                                        isConnected && isMicOpen ? 'bg-green-100 text-green-600 hover:bg-green-200' :
+                                            isConnected && !isMicOpen ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
+                                                'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                         onClick={handleMicToggle}
-                        title={cardConfig.use_realtime === false ? "이 카드는 마이크를 지원하지 않습니다" : isConnected ? "마이크 끄기" : "실시간 음성 대화 시작하기"}
+                        title={isNonRealtime && !isSpeechSupported ? "이 브라우저는 음성 인식을 지원하지 않습니다" :
+                               isNonRealtime ? (isSTTListening ? "듣는 중... (탭하여 취소)" : "마이크로 말하기") :
+                               isConnected ? "마이크 끄기" : "실시간 음성 대화 시작하기"}
                     >
-                        {cardConfig.use_realtime === false ? <MicOff className="w-6 h-6" /> :
-                            isConnecting ? <Loader2 className="w-6 h-6 animate-spin" /> :
-                                isConnected && isMicOpen ? <Mic className="w-6 h-6" /> :
-                                    isConnected && !isMicOpen ? <MicOff className="w-6 h-6" /> :
-                                        <MicOff className="w-6 h-6 opacity-50" />}
+                        {isNonRealtime && !isSpeechSupported ? <MicOff className="w-6 h-6" /> :
+                            isNonRealtime ? <Mic className="w-6 h-6" /> :
+                                isConnecting ? <Loader2 className="w-6 h-6 animate-spin" /> :
+                                    isConnected && isMicOpen ? <Mic className="w-6 h-6" /> :
+                                        isConnected && !isMicOpen ? <MicOff className="w-6 h-6" /> :
+                                            <MicOff className="w-6 h-6 opacity-50" />}
                     </button>
 
                     <div className="relative flex-1 h-full flex items-center">
