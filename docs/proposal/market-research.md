@@ -45,14 +45,92 @@
 - 스마트 스피커 시장 CAGR 21% 성장 전망 (카운터포인트리서치)
 - 자녀 있는 가정 보급률: 업계 추정치 30~40% 수준 (별도 공개 통계 없음)
 
-### 1-5. 학부모 자녀 교육 지출 현황
+### 1-5. 국내 완구·교육완구·AI 완구 시장 (유아~초등 저학년 타겟)
+
+#### 1-5-1. 국내 완구 시장 규모 및 트렌드
 
 | 지표 | 수치 | 출처 |
 |---|---|---|
-| 2024년 초·중·고 사교육비 총액 | **29.2조 원** (+7.7% YoY) | 교육부·통계청 2024년 사교육비조사 |
-| 초등학생 1인당 월평균 사교육비 | **50만 4,000원** | 교육부 2024 |
-| 두 자녀 이상 가구 월 평균 사교육비 | **61만 원** (생활비 약 13%) | 통계청 |
-| 소득 800만원 이상 가구 월 사교육비 | **67만 6,000원** | 교육부 2024 |
+| 국내 완구 시장 추정 규모 | **1조 5,000억~2조 원** | 한국완구공업협동조합 |
+| 국내 아동·유아용품 거래액 (2023) | **5조 2,330억 원** (5년간 +45%) | 통계청 |
+| 한국 완구 시장 전망 (2027) | **약 5조 8,000억 원 (43억 달러)** (CAGR 4%) | Research Nester |
+| 완구 수입액 (2020) | **약 8,628억 원 (7.6억 달러)** | 무역협회 |
+| 수입 완구 비중 | **약 60%** | 업계 추정 |
+| 아동인구 (2024년 말) | **687만 6,000명** (전년 대비 -2.9%, 10년 전 대비 -25.2%) | 통계청(KOSIS) |
+
+**국내 완구 시장 핵심 트렌드:**
+- **골드키즈·텐포켓 현상**: 자녀 수 감소 → 1인당 지출 증가. 주요 백화점 아동 명품 매출 15~28% 증가 (2023년)
+- **키덜트 시장 성장**: 국내 키덜트 시장 2020년 기준 **약 1조 6,000억 원** 규모 (한국콘텐츠진흥원); 어린이 완구업계가 2030세대를 새로운 주요 고객으로 공략
+- **완구 대여 확산**: 장난감 대여 사업장 2017년 86개 → 2023년 116개, 대여 건수 199만 건 → 240만 건 (중앙육아종합지원센터)
+- 저출산에도 불구하고 프리미엄화·에듀테인먼트화로 단가 상승이 시장 규모 방어
+
+#### 1-5-2. 글로벌 교육용 완구 시장
+
+| 지표 | 수치 | 출처 |
+|---|---|---|
+| 글로벌 교육용 완구 시장 (2024) | **약 663~726억 달러** | Fortune BI / Mordor Intelligence |
+| 2030년 전망 | **약 1,085~1,188억 달러** | 동 |
+| CAGR | **8.4~12.0%** | 복수 리서치 기관 |
+| 영·유아(1~3세) 세그먼트 비중 (2023) | **약 51%** (연령별 최대) | Grand View Research |
+| 프리스쿨(미취학) 세그먼트 CAGR | **13.4%** (가장 빠른 성장) | Grand View Research |
+| STEM 완구 CAGR | **14.6%** (2024~2030) | Grand View Research |
+| 아시아태평양 지역 CAGR | **10.4~13.1%** | Fortune BI / Grand View Research |
+| 글로벌 프리스쿨 게임·완구 시장 (2025) | **154억 달러 → 2035년 313억 달러** (CAGR 7.4%) | Research Nester |
+
+> **핵심 인사이트**: 교육용 완구 시장에서 영·유아(1~3세) 및 프리스쿨(3~5세) 세그먼트가 가장 큰 비중과 빠른 성장세를 보임. 2024년 전 세계 부모의 **70% 이상**이 2~8세 자녀에게 일반 완구보다 교육용 완구를 선호 (Mordor Intelligence).
+
+#### 1-5-3. 글로벌 스마트·AI 완구 시장
+
+| 지표 | 수치 | 출처 |
+|---|---|---|
+| 스마트 완구 시장 전체 (2024) | **138~181억 달러** | Grand View Research / IMARC Group |
+| 2030~2033년 전망 | **256~600억 달러** | 복수 리서치 기관 |
+| 스마트 완구 CAGR | **11.5~16.7%** | 복수 기관 |
+| 스마트·AI 완구 전용 세그먼트 (2024) | **약 20억 달러** | Market.us Scoop |
+| AI 완구 2033년 전망 | **약 75억 달러** (CAGR **15.7%**) | Market.us Scoop |
+| **AI 봉제완구(Plush Toys)** (2024) | **7,400만 달러** → 2032년 **13.7억 달러** (CAGR **52%**) | Intel Market Research |
+| 3~8세 세그먼트 비중 (2025) | **38.2%** (연령별 최대) | Future Market Insights |
+| 아시아태평양 CAGR | **14.7%** (지역별 최고) | Grand View Research |
+
+**스마트·AI 완구 최신 동향:**
+- **LEGO × OpenAI** 파트너십 (2024년 12월): AI 보조 스토리텔링·코딩 탐구
+- **Mattel × OpenAI/Google Cloud**: AI 기반 바비 라인 출시 (2025년 5월 발표); 데이터 처리 시간을 1개월 → 1분으로 단축
+- AI 음성인식·터치센서·표정 감지 기능을 갖춘 인터랙티브 봉제완구가 CAGR 52%로 **가장 빠른 성장 세그먼트**
+- 스마트폰 연동 완구가 2024년 기준 스마트 완구 시장의 **45%** 점유
+
+**Reading Buddy가 타겟하는 시장 포지셔닝:**
+
+| 시장 세그먼트 | 2025년 규모 | CAGR | Reading Buddy 연관성 |
+|---|---|---|---|
+| 글로벌 교육용 완구 | ~720억 달러 | ~8~12% | 교육완구 포지션 |
+| 스마트·AI 완구 | ~20억 달러 (AI 전용) | 15.7% | AI 인터랙션 완구 |
+| AI 봉제·캐릭터 완구 | 7,400만 달러 | **52%** | IP 캐릭터 연계 최근접 세그먼트 |
+| 스크린프리 어린이 오디오 플레이어 | 14.3억 달러 | 11.2% | 하드웨어 포지션 |
+
+> **결론**: Reading Buddy는 '스크린프리 오디오 기기' × '교육용 AI 완구' × 'IP 캐릭터 연계 봉제완구'라는 **3개 고성장 시장의 교차점**에 위치한 제품으로, 유아~초등 저학년(3~8세)이 핵심 타겟인 세그먼트에서 모두 두 자릿수 CAGR이 확인됨.
+
+---
+
+### 1-6. 학부모 자녀 교육 지출 현황
+
+> **2025년 3월 최신 발표 데이터 (교육부·국가데이터처 「2025년 초중고 사교육비 조사 결과」)**
+
+| 지표 | 수치 (2024년 기준) | 전년 비교 | 출처 |
+|---|---|---|---|
+| 초·중·고 사교육비 총액 | **27조 5,000억 원** | -5.7% (5년 만의 첫 감소) | 교육부·국가데이터처 2025.03 |
+| 초등학생 1인당 월평균 사교육비 | **43만 3,000원** | -7.9% | 교육부·국가데이터처 2025.03 |
+| 중학생 1인당 월평균 사교육비 | **46만 1,000원** | -3.2% | 교육부·국가데이터처 2025.03 |
+| 고등학생 1인당 월평균 사교육비 | **49만 9,000원** | -4.3% | 교육부·국가데이터처 2025.03 |
+| 사교육 **참여 학생** 기준 월평균 | **60만 4,000원** | **+2.0%** (참여자 지출은 오히려 증가) | 교육부·국가데이터처 2025.03 |
+| 사교육 참여율 | **75.7%** | -4.3%p | 교육부·국가데이터처 2025.03 |
+| 소득 800만 원 이상 가구 월 사교육비 | **66만 2,000원** | — | 교육부·국가데이터처 2025.03 |
+| 소득 300만 원 미만 가구 월 사교육비 | **19만 2,000원** | — | 교육부·국가데이터처 2025.03 |
+
+**주요 인사이트:**
+- 총액·참여율·참여시간 모두 하락했으나, **사교육에 참여한 학생의 1인당 지출은 오히려 증가(+2.0%)** — 소득 양극화 심화
+- 영어(월 13만 1,000원)·수학(12만 8,000원)이 양대 핵심 지출 과목
+- 초등 돌봄·방과후학교 확대 등 정부 정책이 총액 감소에 일부 기여
+- 사교육을 포기하는 층과 집중 투자하는 층으로 **이중화 구조** 심화 → 교육 완구·AI 학습 기기가 대안 채널로 부상 가능
 
 ---
 
@@ -288,12 +366,14 @@
 
 | # | 근거 | 핵심 수치 |
 |---|---|---|
-| 1 | 거대한 국내 교육 지출 | 사교육비 29.2조 원, 초등 1인당 월 50만 원 |
+| 1 | 거대한 국내 교육 지출 | 사교육비 27.5조 원 (2025년 최신), 참여 학생 1인당 월 60만 원 |
 | 2 | 아동 도서 시장 성장 | 유아동 도서 매출 +15.4%, 발행 비중 20.6% |
 | 3 | 글로벌 레퍼런스 검증 | tonies 연매출 7,000억 원, Yoto +86% 성장 |
 | 4 | IP-하드웨어 파트너십 효과 | tonies×Disney 100종+, 학부모 45% 캐릭터 구매 |
 | 5 | 과학적 근거 | WHO 스크린 제한, 대화형 AI 아동 학습 효과 입증 |
 | 6 | 출판사 디지털 전환 필요성 | 시공사 전환 선언, KPIPA 오디오북 정책 지원 |
+| 7 | 교육용 완구·AI 완구 고성장 시장 | 교육완구 CAGR 8~12%, AI 완구 CAGR 15.7%, AI 봉제완구 CAGR 52% |
+| 8 | 국내 유아용품 시장 규모 | 아동·유아용품 거래액 5.2조 원, 골드키즈·텐포켓 프리미엄화 |
 
 ---
 
@@ -301,13 +381,29 @@
 
 ### 국내 시장 / 통계
 - [대한출판문화협회 2024년 출판시장 통계보고서](https://member.kpa21.or.kr/wp-content/uploads/sites/2/2025/04/2024%EB%85%84-%EC%B6%9C%ED%8C%90%EC%8B%9C%EC%9E%A5-%ED%86%B5%EA%B3%84-%EB%B3%B4%EA%B3%A0%EC%84%9C%EC%B5%9C%EC%A2%85.pdf)
-- [교육부·통계청 2024년 사교육비조사 결과](https://www.korea.kr/briefing/policyBriefingView.do?newsId=156678713)
+- [교육부·국가데이터처 2025년 초중고 사교육비 조사 결과 (2025.03 발표)](https://www.korea.kr/briefing/pressReleaseView.do?newsId=156748555)
+- [교육부·통계청 2024년 사교육비조사 결과 (구 데이터)](https://www.korea.kr/briefing/policyBriefingView.do?newsId=156678713)
+- [한국 완구 시장 전망 2027 — Research Nester](https://www.researchnester.com/reports/korea-toys-market/2410)
+- [완구시장 키덜트 트렌드 — SEN TV (2025)](https://www.sentv.co.kr/article/view/sentv202501240012)
+- [한국완구공업협동조합 (kotoy.or.kr)](http://www.kotoy.or.kr)
 - [국내 에듀테크 시장 10조원 성장 전망 — 전자신문](https://www.etnews.com/20220630000153)
 - [2025년 한국 에듀테크 산업 종합분석 보고서](https://files-scs.pstatic.net/2025/02/27/4mWAAoFOE8/2025%EB%85%84%20%EC%97%90%EB%93%80%ED%85%8C%ED%81%AC%EC%82%B0%EC%97%85%20%EB%B0%8F%20%EB%94%94%EC%A7%80%ED%84%B8%20%EA%B5%90%EC%9C%A1%ED%98%81%EC%8B%A0%20%EC%8B%9C%EC%9E%A5%20%EC%A2%85%ED%95%A9%20%EB%B6%84%EC%84%9D%20%EB%B3%B4%EA%B3%A0%EC%84%9C(1%EC%B0%A8).pdf)
 - [카운터포인트 스마트 스피커 21% 성장 전망](https://korea.counterpointresearch.com/%EC%8A%A4%EB%A7%88%ED%8A%B8-%EC%8A%A4%ED%94%BC%EC%BB%A4-%EC%8B%9C%EC%9E%A5-2025%EB%85%84%EA%B9%8C%EC%A7%80-%EC%97%B0%ED%8F%89%EA%B7%A0-21-%EC%84%B1%EC%9E%A5-%EC%A0%84%EB%A7%9D/)
 - [한국출판문화산업진흥원 (KPIPA)](https://www.kpipa.or.kr/p/g3_1/138)
 - [KPIPA 오디오북 제작 지원 사업 2024](https://www.kpipa.or.kr/p/g1_2/1636)
 - [시공사 디지털 전환 선언 — 한국경제](https://www.hankyung.com/article/202407118571g)
+
+### 완구·교육완구·AI 완구 시장
+- [글로벌 교육용 완구 시장 — Fortune Business Insights](https://www.fortunebusinessinsights.com/educational-toys-market-106324)
+- [글로벌 교육용 완구 시장 — Grand View Research](https://www.grandviewresearch.com/industry-analysis/educational-toys-market-report)
+- [글로벌 교육용 완구 시장 — Mordor Intelligence](https://www.mordorintelligence.com/industry-reports/global-educational-toys-market)
+- [글로벌 스마트 완구 시장 — Grand View Research](https://www.grandviewresearch.com/industry-analysis/smart-toys-market-report)
+- [스마트·AI 완구 시장 — IMARC Group](https://www.imarcgroup.com/smart-toys-market)
+- [Smart/AI Toy Market Forecast 2035 — Future Market Insights](https://www.futuremarketinsights.com/reports/smart-ai-toys-market)
+- [AI Plush Toys Market — Intel Market Research](https://www.intelmarketresearch.com/ai-plush-toys-market-3475)
+- [AI 완구 시장 USD 7,502M 전망 — Market.us Scoop](https://scoop.market.us/smart-ai-toys-market-news/)
+- [글로벌 프리스쿨 게임·완구 시장 — Research Nester](https://www.researchnester.com/reports/pre-school-games-and-toys-market/8294)
+- [LEGO × OpenAI 파트너십 발표 (2024.12)](https://www.lego.com)
 
 ### 글로벌 시장 / 경쟁 제품
 - [tonies SE FY2024 실적 발표 (EQS News)](https://www.eqs-news.com/news/corporate/tonies-erreicht-ziele-fur-das-geschaftsjahr-2024-mit-deutlichem-umsatzwachstum-und-verbesserter-profitabilitat-positiver-freier-cashflow-und-nettogewinn-erzielt/e0893fb2-9164-4e36-a30c-e2087e31c55d)
