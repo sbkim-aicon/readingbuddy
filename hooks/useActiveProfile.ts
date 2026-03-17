@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const STORAGE_KEY = "parent_active_profile_id";
 
@@ -12,15 +12,15 @@ export function useActiveProfile() {
     if (stored) setActiveProfileId(stored);
   }, []);
 
-  const setActive = (id: string) => {
+  const setActive = useCallback((id: string) => {
     setActiveProfileId(id);
     localStorage.setItem(STORAGE_KEY, id);
-  };
+  }, []);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     setActiveProfileId(null);
     localStorage.removeItem(STORAGE_KEY);
-  };
+  }, []);
 
   return { activeProfileId, setActive, clear };
 }

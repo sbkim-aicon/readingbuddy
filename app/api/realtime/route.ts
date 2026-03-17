@@ -15,12 +15,12 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "gpt-4o-realtime-preview",
+                model: "gpt-4o-realtime-preview-2024-10-01",
                 voice: voice_openai || "alloy",
                 instructions: system_prompt || "You are a helpful reading buddy.",
                 temperature: temperature || 0.8,
                 modalities: ["audio", "text"],
-                tools: tools || undefined,
+                tools: tools?.map((t: any) => ({ type: 'function', ...t })) || undefined,
                 tool_choice: tools ? "auto" : undefined,
                 turn_detection: {
                     type: "server_vad",

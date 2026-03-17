@@ -23,8 +23,8 @@ export default function MobileShell({ children }: { children: ReactNode }) {
           <div className="w-16 h-1.5 bg-gray-700 rounded-full" />
         </div>
 
-        {/* 콘텐츠 영역 */}
-        <div className="flex-1 overflow-y-auto md:mt-7 relative">
+        {/* 콘텐츠 영역 (flex-1로 프레임 전체를 채우고, pt-8로 노치 영역 확보) */}
+        <div className="flex-1 flex flex-col min-h-0 pt-8 relative">
           {children}
         </div>
       </div>

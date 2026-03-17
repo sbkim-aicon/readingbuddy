@@ -8,6 +8,7 @@ import SpeakerCharacter, { SpeakerState } from "./SpeakerCharacter";
 import { useRealtimeVoice } from "@/hooks/useRealtimeVoice";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSoundManager } from "@/hooks/useSoundManager";
+import { useActiveProfile } from "@/hooks/useActiveProfile";
 
 export default function SpeakerSession({
     cardConfig,
@@ -28,6 +29,9 @@ export default function SpeakerSession({
     const [sessionState, setSessionState] = useState<ReadingSessionState | null>(null);
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isTimerFinished, setIsTimerFinished] = useState(false);
+    const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
+
+    const { activeProfileId } = useActiveProfile();
 
     // Sound manager — BGM + synthesized SFX
     const { playSFX, startBGM, stopBGM } = useSoundManager(cardConfig.sounds);
@@ -51,6 +55,7 @@ export default function SpeakerSession({
 
     // WebRTC Realtime Voice Hook
     const checkAnswerTool = {
+        type: "function",
         name: "check_answer",
         description: "Verifies the child's answer programmatically for better accuracy. Call this to check if the child said the right thing.",
         parameters: {
@@ -132,6 +137,11 @@ export default function SpeakerSession({
         if (name === 'advance_session') {
             const newPhase = args.phase as ReadingSessionPhase;
             const newPageIndex = typeof args.currentPageIndex === 'number' ? args.currentPageIndex : undefined;
+            
+            if (newPhase === 'END') {
+                logSessionData();
+            }
+
             setSessionState(prev => {
                 if (!prev) return prev;
                 return {
@@ -142,6 +152,30 @@ export default function SpeakerSession({
             });
             setTimeout(() => respond(JSON.stringify({ success: true, phase: newPhase })), 150);
             return;
+        }
+    };
+
+    const logSessionData = async () => {
+        if (!sessionStartTime || !activeProfileId) return;
+
+        const duration = Math.round((new Date().getTime() - new Date(sessionStartTime).getTime()) / 1000);
+        
+        try {
+            await fetch('/api/parent/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    profile_id: activeProfileId,
+                    card_id: cardConfig.card_id,
+                    card_title: cardConfig.title,
+                    card_type: cardConfig.card_type,
+                    started_at: sessionStartTime,
+                    duration_seconds: duration,
+                    pages_completed: sessionState?.currentPageIndex,
+                })
+            });
+        } catch (err) {
+            console.error("Failed to log session data:", err);
         }
     };
 
@@ -340,6 +374,7 @@ export default function SpeakerSession({
                 timerAudioRef.current.remove();
                 timerAudioRef.current = null;
             }
+            logSessionData();
             disconnect();
             router.push("/");
         }
@@ -374,6 +409,7 @@ export default function SpeakerSession({
     const handleStart = () => {
         initTTSAudio();
         setIsStarted(true);
+        setSessionStartTime(new Date().toISOString());
         if (cardConfig.use_realtime !== false) {
             connect();
         } else {
@@ -577,7 +613,9 @@ export default function SpeakerSession({
                     message: messageToSend || "안녕! 대화를 시작하자.", // Fallback starter 
                     conversation_history: messages,
                     session_state: sessionState,
-                    book_data: bookData
+                    book_data: bookData,
+                    profile_id: activeProfileId,
+                    started_at: sessionStartTime
                 })
             });
 
@@ -740,7 +778,7 @@ export default function SpeakerSession({
     }
 
     return (
-        <div className="relative flex flex-col h-full w-full min-h-screen bg-white overflow-hidden">
+        <div className="relative flex flex-col h-full w-full bg-white overflow-hidden">
 
             {/* Start Overlay — shown until user taps to begin (required for getUserMedia on mobile) */}
             {!isStarted && (
@@ -777,37 +815,45 @@ export default function SpeakerSession({
             )}
 
             {/* Top Bar Navigation */}
-            <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10">
+            <header className="absolute top-0 left-0 right-0 p-3 md:p-6 flex justify-between items-center z-10 bg-gradient-to-b from-white via-white/80 to-transparent">
                 <button
                     onClick={handleEndSession}
-                    className="flex items-center gap-2 px-4 py-2 text-[#666666] bg-white rounded-xl shadow-sm font-medium hover:bg-gray-50 transition-colors border border-gray-100"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[#666666] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm font-medium hover:bg-gray-50 transition-colors border border-gray-100 shrink-0"
                 >
-                    <X className="w-5 h-5" />
-                    종료
+                    <X className="w-4 h-4" />
+                    <span className="text-sm">종료</span>
                 </button>
 
-                <div className="flex flex-col items-center absolute left-1/2 -translate-x-1/2">
-                    <div className="text-center font-bold text-[#333333] text-xl flex items-center gap-2">
-                        {cardConfig.persona_name}
-                        {isConnecting && <Loader2 className="w-4 h-4 animate-spin text-blue-400" />}
+                <div className="flex flex-col items-end flex-1 ml-4 min-w-0">
+                    <div className="flex flex-col items-end gap-1 w-full truncate">
+                        <span className="font-bold text-[#333333] text-base md:text-xl truncate max-w-[120px] md:max-w-none">
+                            {cardConfig.persona_name}
+                        </span>
                         {isConnected && (
-                            <span className="flex text-xs font-normal ml-2 items-center">
+                            <span className="flex text-[10px] md:text-xs font-normal items-center">
                                 {isMicOpen ? (
-                                    <span className="flex items-center gap-1.5 text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                        마이크 켜짐 (말씀하세요)
+                                    <span className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 whitespace-nowrap">
+                                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                        마이크 꺼짐
                                     </span>
                                 ) : (
-                                    <span className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                    <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 whitespace-nowrap">
+                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
                                         듣는 중...
                                     </span>
                                 )}
                             </span>
                         )}
                     </div>
+                </div>
+            </header>
+
+            {/* Main Center Area: Huge Speaker Character */}
+            <div className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-0">
+                {/* Session specific info placed flexibly in the center area to avoid header overlap */}
+                <div className="flex flex-col items-center mb-4 z-10 gap-2">
                     {sessionState && (
-                        <div className="mt-1 px-3 py-1 bg-blue-50 text-blue-600 font-semibold rounded-full text-sm shadow-sm border border-blue-100">
+                        <div className="px-3 py-1 bg-blue-50 text-blue-600 font-bold rounded-full text-xs shadow-sm border border-blue-100">
                             {sessionState.phase === 'PRE' && "책 읽기 준비"}
                             {sessionState.phase === 'DURING_DIALOGIC' && `${sessionState.currentPageIndex + 1} / ${sessionState.totalPages} 페이지`}
                             {sessionState.phase === 'POST' && "책 다 읽음!"}
@@ -815,17 +861,13 @@ export default function SpeakerSession({
                         </div>
                     )}
                     {timeLeft !== null && (
-                        <div className={`mt-1 px-4 py-1 font-bold rounded-full text-sm shadow-sm border flex items-center gap-2 ${timeLeft < 30 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                            <Loader2 className={`w-3 h-3 ${timeLeft > 0 ? 'animate-spin' : ''}`} />
+                        <div className={`px-4 py-1 font-bold rounded-full text-xs shadow-sm border flex items-center gap-2 ${timeLeft < 30 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                             남은 시간: {Math.floor(timeLeft / 60)}분 {timeLeft % 60}초
                         </div>
                     )}
                 </div>
-            </header>
 
-            {/* Main Center Area: Huge Speaker Character */}
-            <div className="flex-1 flex items-center justify-center p-6 relative">
-                <div className="z-0 transform scale-125 md:scale-150 transition-transform duration-500 ease-out mt-12 md:mt-0">
+                <div className="z-0 transform scale-110 md:scale-150 transition-transform duration-500 ease-out">
                     <SpeakerCharacter 
                         state={state} 
                         onPTTStart={handlePTTStart}
@@ -835,7 +877,7 @@ export default function SpeakerSession({
             </div>
 
             {/* Bottom Overlay Area: Chat & Input */}
-            <div className="z-10 w-full max-w-3xl mx-auto px-4 pb-8 flex flex-col gap-4">
+            <div className="z-20 w-full max-w-3xl mx-auto px-3 pb-4 md:pb-8 flex flex-col gap-3">
 
                 {/* Mic permission warning — non-fatal, text input still works */}
                 {micError && (
@@ -846,11 +888,11 @@ export default function SpeakerSession({
                 )}
 
                 {/* Input Form Box */}
-                <form onSubmit={handleSubmit} className="flex gap-3 bg-white p-3 md:p-4 rounded-3xl shadow-lg border border-gray-100 items-center">
+                <form onSubmit={handleSubmit} className="flex gap-2 bg-white p-2 md:p-3 rounded-2xl md:rounded-3xl shadow-lg border border-gray-100 items-center">
                     <button
                         type="button"
                         disabled={isConnecting || (isNonRealtime && !isSpeechSupported)}
-                        className={`p-3 md:p-4 rounded-full transition-colors shrink-0 disabled:opacity-50
+                        className={`p-2.5 md:p-4 rounded-full transition-colors shrink-0 disabled:opacity-50
                             ${isNonRealtime && !isSpeechSupported ? 'bg-gray-100 text-gray-400' :
                                 isNonRealtime && isSTTListening ? 'bg-green-100 text-green-600 hover:bg-green-200 animate-pulse' :
                                     isNonRealtime ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' :
@@ -862,12 +904,12 @@ export default function SpeakerSession({
                                isNonRealtime ? (isSTTListening ? "듣는 중... (탭하여 취소)" : "마이크로 말하기") :
                                isConnected ? "마이크 끄기" : "실시간 음성 대화 시작하기"}
                     >
-                        {isNonRealtime && !isSpeechSupported ? <MicOff className="w-6 h-6" /> :
-                            isNonRealtime ? <Mic className="w-6 h-6" /> :
-                                isConnecting ? <Loader2 className="w-6 h-6 animate-spin" /> :
-                                    isConnected && isMicOpen ? <Mic className="w-6 h-6" /> :
-                                        isConnected && !isMicOpen ? <MicOff className="w-6 h-6" /> :
-                                            <MicOff className="w-6 h-6 opacity-50" />}
+                        {isNonRealtime && !isSpeechSupported ? <MicOff className="w-5 h-5 md:w-6 md:h-6" /> :
+                            isNonRealtime ? <Mic className="w-5 h-5 md:w-6 md:h-6" /> :
+                                isConnecting ? <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> :
+                                    isConnected && isMicOpen ? <Mic className="w-5 h-5 md:w-6 md:h-6" /> :
+                                        isConnected && !isMicOpen ? <MicOff className="w-5 h-5 md:w-6 md:h-6" /> :
+                                            <MicOff className="w-5 h-5 md:w-6 md:h-6 opacity-50" />}
                     </button>
 
                     <div className="relative flex-1 h-full flex items-center">
@@ -875,17 +917,17 @@ export default function SpeakerSession({
                             type="text"
                             value={inputText}
                             onChange={e => setInputText(e.target.value)}
-                            placeholder={isConnected ? "텍스트로 말 걸기..." : "여기에 입력하거나 마이크 버튼을 눌러보세요!"}
-                            className="w-full h-full bg-transparent text-gray-800 text-lg focus:outline-none placeholder-gray-400"
+                            placeholder={isConnected ? "텍스트 입력..." : "입력하세요!"}
+                            className="w-full h-full bg-transparent text-gray-800 text-base md:text-lg focus:outline-none placeholder-gray-400"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={!inputText.trim()}
-                        className="p-3 md:p-4 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-30 disabled:hover:bg-blue-500 transition-all shadow-md shrink-0"
+                        className="p-2.5 md:p-4 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-30 disabled:hover:bg-blue-500 transition-all shadow-md shrink-0"
                     >
-                        <Send className="w-6 h-6 ml-0.5" />
+                        <Send className="w-5 h-5 md:w-6 md:h-6 ml-0.5" />
                     </button>
                 </form>
             </div>

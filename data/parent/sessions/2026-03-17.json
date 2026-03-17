@@ -1,0 +1,31 @@
+[
+  {
+    "session_id": "58785482-1b72-4eb8-87db-b2fe4ec79be8",
+    "profile_id": "037b0811-8e92-4a28-8a01-fa33696607b0",
+    "card_id": "who_am_i",
+    "card_title": "나는 누구일까요?",
+    "card_type": "general",
+    "started_at": "2026-03-17T07:46:14.811Z",
+    "ended_at": "2026-03-17T07:49:18.353Z",
+    "duration_seconds": 183,
+    "topics_covered": [],
+    "child_questions": [],
+    "highlighted_words": [],
+    "talk_guide_generated": false
+  },
+  {
+    "session_id": "441de2cf-4323-4cd6-8063-6c3e2056a5de",
+    "profile_id": "037b0811-8e92-4a28-8a01-fa33696607b0",
+    "card_id": "story_12b1cd85",
+    "card_title": "한국 꼬마 축구선수 시원의 꿈",
+    "card_type": "read_with_me",
+    "started_at": "2026-03-17T08:08:27.747Z",
+    "ended_at": "2026-03-17T08:08:57.280Z",
+    "duration_seconds": 28,
+    "topics_covered": [],
+    "child_questions": [],
+    "highlighted_words": [],
+    "pages_completed": 0,
+    "talk_guide_generated": false
+  }
+]

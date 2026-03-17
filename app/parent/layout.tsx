@@ -10,10 +10,8 @@ export const metadata = {
 export default function ParentLayout({ children }: { children: ReactNode }) {
   return (
     <MobileShell>
-      <div className="flex flex-col h-full">
-        <main className="flex-1 overflow-y-auto">{children}</main>
-        <BottomNav />
-      </div>
+      <main className="flex-1 overflow-y-auto">{children}</main>
+      <BottomNav />
     </MobileShell>
   );
 }

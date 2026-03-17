@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "profile_id": "037b0811-8e92-4a28-8a01-fa33696607b0",
+    "name": "유탑",
+    "birth_date": "2019-05-13",
+    "avatar": "🐶",
+    "interests": [],
+    "language": "ko",
+    "daily_limit_minutes": 30,
+    "allowed_card_ids": [],
+    "created_at": "2026-03-17T07:24:12.858Z"
+  }
+]
