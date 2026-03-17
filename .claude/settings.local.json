@@ -7,7 +7,8 @@
       "Bash(cd \"C:\\\\Users\\\\ccm\\\\readingbuddy\" && npx next build 2>&1 | tail -30)",
       "Bash(cd \"C:\\\\Users\\\\ccm\\\\readingbuddy\" && npx tsc --noEmit 2>&1 | head -20)",
       "Bash(cd \"C:\\\\Users\\\\ccm\\\\readingbuddy\" && npx next build 2>&1 | grep -E \"error|Error|warning|✓|Route\" | head -30)",
-      "Bash(cd \"C:\\\\Users\\\\ccm\\\\readingbuddy\" && npx next build 2>&1 | grep -E \"error|Error\" | head -10)"
+      "Bash(cd \"C:\\\\Users\\\\ccm\\\\readingbuddy\" && npx next build 2>&1 | grep -E \"error|Error\" | head -10)",
+      "Bash(cd \"C:\\\\Users\\\\ccm\\\\readingbuddy\" && rm -rf .next)"
     ]
   }
 }

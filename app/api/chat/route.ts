@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOpenAIChatResponse } from "@/lib/openai-chat";
 import { getActivePromptContent } from "@/lib/prompt-versions";
+import { logSession } from "@/lib/session-logger";
 import fs from "fs/promises";
 import path from "path";
 
@@ -185,6 +186,24 @@ You must respond in strict JSON format. Do NOT wrap it in markdown block quotes.
                     aiResponseText = "응답 형식 오류가 발생했습니다.";
                 }
             }
+        }
+
+        // Fire-and-forget session log on END phase
+        const sessionState = newSessionState || body.session_state;
+        if (body.profile_id && body.started_at && sessionState?.phase === "END") {
+            void logSession({
+                profile_id: body.profile_id,
+                card_id,
+                card_title: cardConfig.title,
+                card_type: cardConfig.card_type,
+                started_at: body.started_at,
+                duration_seconds: body.duration_seconds ?? 0,
+                topics_covered: body.topics_covered ?? [],
+                child_questions: body.child_questions ?? [],
+                highlighted_words: body.highlighted_words ?? [],
+                pages_completed: sessionState?.currentPageIndex,
+                game_results: body.game_results,
+            });
         }
 
         return NextResponse.json({

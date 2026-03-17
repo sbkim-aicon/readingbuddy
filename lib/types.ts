@@ -71,7 +71,76 @@ export interface BookData {
   post_reading: any;
 }
 
-// Prompt versioning types
+// ─── Parent App Types ────────────────────────────────────────────────────────
+
+export interface ChildProfile {
+  profile_id: string;
+  name: string;
+  birth_date: string;        // "YYYY-MM-DD"
+  avatar: string;            // emoji or image path
+  interests: string[];       // ["우주", "공룡", ...]
+  language: "ko" | "en" | "both";
+  daily_limit_minutes: number; // 0 = 무제한
+  allowed_card_ids: string[]; // 빈 배열 = 전체 허용
+  created_at: string;
+}
+
+export interface SessionLog {
+  session_id: string;
+  profile_id: string;
+  card_id: string;
+  card_title: string;
+  card_type: string;
+  started_at: string;        // ISO string
+  ended_at: string;          // ISO string
+  duration_seconds: number;
+  topics_covered: string[];
+  child_questions: string[];
+  highlighted_words: string[];
+  pages_completed?: number;
+  game_results?: {
+    total_rounds: number;
+    correct_answers: number;
+    hints_used: number;
+  };
+  talk_guide_generated: boolean;
+}
+
+export interface TalkGuide {
+  guide_id: string;
+  profile_id: string;
+  session_id: string;
+  card_id: string;
+  card_title: string;
+  generated_at: string;
+  title: string;
+  summary_for_parent: string;
+  child_highlight: string;
+  conversation_starters: {
+    question: string;
+    why_this_works: string;
+  }[];
+  offline_activities: string[];
+  book_recommendations: { title: string; reason: string }[];
+  parent_acknowledged: boolean;
+  conversation_happened: boolean;
+}
+
+export interface DailyUsageSummary {
+  date: string;              // "YYYY-MM-DD"
+  total_minutes: number;
+  session_count: number;
+  cards_used: { card_id: string; card_title: string; minutes: number }[];
+}
+
+export interface WeeklyUsageSummary {
+  days: DailyUsageSummary[];
+  total_minutes: number;
+  total_sessions: number;
+  top_cards: { card_id: string; card_title: string; minutes: number }[];
+}
+
+// ─── Prompt versioning types ─────────────────────────────────────────────────
 export interface PromptVersion {
   id: string;
   content: string;
