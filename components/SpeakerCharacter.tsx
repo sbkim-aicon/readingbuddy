@@ -7,11 +7,12 @@ export type SpeakerState = "idle" | "speaking" | "listening" | "thinking" | "err
 
 interface SpeakerCharacterProps {
     state: SpeakerState;
+    isPTTMode?: boolean;
     onPTTStart?: () => void;
     onPTTEnd?: () => void;
 }
 
-export default function SpeakerCharacter({ state, onPTTStart, onPTTEnd }: SpeakerCharacterProps) {
+export default function SpeakerCharacter({ state, isPTTMode = false, onPTTStart, onPTTEnd }: SpeakerCharacterProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPressed, setIsPressed] = useState(false);
 
@@ -63,7 +64,7 @@ export default function SpeakerCharacter({ state, onPTTStart, onPTTEnd }: Speake
                 <div className="absolute inset-0 -z-10 rounded-full bg-blue-400/20 animate-ping" />
             )}
 
-            {state === 'listening' && (
+            {state === 'listening' && isPTTMode && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-blue-500 rounded-full p-3 shadow-2xl animate-bounce">
                     <Mic className="w-8 h-8 text-white" />
                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-xs px-2 py-1 rounded">

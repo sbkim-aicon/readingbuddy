@@ -179,6 +179,7 @@ export default function SpeakerSession({
         }
     };
 
+
     const {
         connect,
         disconnect,
@@ -198,11 +199,10 @@ export default function SpeakerSession({
         voice: cardConfig.voice_openai || "alloy",
         temperature: cardConfig.temperature || 0.8,
         manualMicControl: ['card_12_who_am_i', 'card_13_market_game', 'card_14_reverse_word'].includes(cardConfig.card_id),
-        tools: [checkAnswerTool],
         onFunctionCall: handleFunctionCall,
         onAudioStarted: () => setState("speaking"),
         onAudioEnded: () => setState("listening"),
-        onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState("listening"); },
+        onUserSpeaking: (isSpeaking) => { if (isSpeaking) setState(prev => prev === "speaking" ? "speaking" : "listening"); },
         onError: (err) => {
             console.error(err);
             setState("error");
@@ -219,25 +219,7 @@ export default function SpeakerSession({
         const tools: object[] = [];
 
         if (['card_12_who_am_i', 'card_13_market_game', 'card_14_reverse_word'].includes(cardConfig.card_id)) {
-            tools.push({
-                type: 'function',
-                name: 'check_answer',
-                description: 'Verifies the child\'s answer programmatically for better accuracy. Call this to check if the child said the right thing.',
-                parameters: {
-                    type: 'object',
-                    properties: {
-                        target_word: { type: 'string', description: 'The word to check (e.g., the word to reverse, or the secret identity).' },
-                        user_input: { type: 'string', description: 'What the child actually said.' },
-                        context: { 
-                            type: 'object',
-                            properties: {
-                                list: { type: 'array', items: { type: 'string' }, description: 'For Card 13, the previous list of items.' }
-                            }
-                        }
-                    },
-                    required: ['target_word', 'user_input']
-                }
-            });
+            tools.push(checkAnswerTool);
         }
 
         if (cardConfig.card_type === 'read_with_me') {
@@ -293,13 +275,14 @@ export default function SpeakerSession({
 
         if (tools.length === 0) return;
 
-        // Add a 500ms delay to give OpenAI's Realtime Server time to initialize the connection context fully
-        // before we send session updates or initial greetings to prevent them from dropping.
+        // Send tools after a delay to let the session fully stabilize.
+        // Sending session.update too early (while VAD is initializing) causes OpenAI 500 errors.
         const timeoutId = setTimeout(() => {
             sendMessage('session.update', { session: { tools, tool_choice: 'auto' } });
-        }, 500);
+        }, 1500);
 
         return () => clearTimeout(timeoutId);
+
     }, [isConnected, cardConfig.card_type, cardConfig.sounds, sendMessage]);
 
     // BGM: start when connected, fade out when disconnected
@@ -870,6 +853,7 @@ export default function SpeakerSession({
                 <div className="z-0 transform scale-110 md:scale-150 transition-transform duration-500 ease-out">
                     <SpeakerCharacter 
                         state={state} 
+                        isPTTMode={isPTTMode}
                         onPTTStart={handlePTTStart}
                         onPTTEnd={handlePTTEnd}
                     />

@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useCallback } from 'react';
 
 interface UseRealtimeVoiceProps {
     cardId: string;
-    cardType?: string;
     systemPrompt: string;
     voice: string;
     temperature: number;
@@ -12,17 +11,14 @@ interface UseRealtimeVoiceProps {
     onAudioStarted?: () => void;
     onAudioEnded?: () => void;
     onUserSpeaking?: (isSpeaking: boolean) => void;
-    tools?: any[];
     // respond() sends the function output back to the model and triggers the next response.
     // Call it (optionally after a short delay) once you have processed the tool call.
     onFunctionCall?: (name: string, args: Record<string, unknown>, respond: (output: string) => void) => void;
     onError?: (error: Error) => void;
-    manualMicControl?: boolean;
 }
 
 export function useRealtimeVoice({
     cardId,
-    cardType,
     systemPrompt,
     voice,
     temperature,
@@ -30,21 +26,16 @@ export function useRealtimeVoice({
     onAudioStarted,
     onAudioEnded,
     onUserSpeaking,
-    tools,
     onFunctionCall,
-    onError,
-    manualMicControl = false
+    onError
 }: UseRealtimeVoiceProps) {
     const [isConnecting, setIsConnecting] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
     const [micError, setMicError] = useState<string | null>(null);
-    const [isMicOpen, setIsMicOpen] = useState(false);
 
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const dcRef = useRef<RTCDataChannel | null>(null);
-    const localAudioTrackRef = useRef<MediaStreamTrack | null>(null);
-    const localStreamRef = useRef<MediaStream | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     // Tracks whether AI audio is currently streaming (resets per response)
     const audioActiveRef = useRef(false);
@@ -56,69 +47,20 @@ export function useRealtimeVoice({
     const onFunctionCallRef = useRef(onFunctionCall);
     onFunctionCallRef.current = onFunctionCall;
 
-    const setMicEnabled = useCallback((enabled: boolean) => {
-        if (localAudioTrackRef.current) {
-            localAudioTrackRef.current.enabled = enabled;
-            setIsMicOpen(enabled);
-        }
-    }, []);
-
     const connect = useCallback(async () => {
         if (isConnected || isConnecting) return;
         setIsConnecting(true);
 
         try {
-            // ─── AUDIO ELEMENT PRE-INIT (iOS muted-autoplay unlock) ──────────────
-            // iOS allows muted autoplay unconditionally (no user-gesture required).
-            // Starting playback now — before any await — means when srcObject is set
-            // later (after async WebRTC negotiation), iOS treats the unmute as a
-            // continuation of existing playback rather than a new autoplay request,
-            // so it does not block the AI audio.
-            const audioEl = document.createElement("audio");
-            audioEl.muted = true;
-            audioEl.setAttribute("playsinline", "");
-            audioEl.style.display = "none";
-            // Tiny silent WAV so play() resolves immediately with no media error.
-            audioEl.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-            document.body.appendChild(audioEl);
-            audioElRef.current = audioEl;
-            audioEl.play().catch(() => {}); // muted autoplay: always permitted on iOS
-
-            // ─── STEP 1: Capture microphone FIRST ────────────────────────────────
-            // iOS Safari/Chrome require getUserMedia to be called as close to the
-            // user gesture as possible. Calling it after an await fetch() causes
-            // iOS to lose the user-gesture activation token and silently deny access.
-            let localStream: MediaStream | null = null;
-            try {
-                setMicError(null);
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true,
-                    }
-                });
-                localStreamRef.current = localStream;
-                localAudioTrackRef.current = localStream.getAudioTracks()[0];
-            } catch (err: any) {
-                console.warn("Microphone access denied or not available", err);
-                const msg = err?.name === "NotAllowedError"
-                    ? "마이크 권한이 거부됐어요. 브라우저 주소창 옆 자물쇠 아이콘에서 마이크를 허용해주세요."
-                    : "마이크를 사용할 수 없어요. 텍스트로 대화할 수 있습니다.";
-                setMicError(msg);
-                // Continue without mic — text-only mode remains available
-            }
-
-            // ─── STEP 2: Get an ephemeral session token from our Next.js backend ─
+            // 1. Get an ephemeral session token from our Next.js backend
             const tokenResponse = await fetch('/api/realtime', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     card_id: cardId,
-                    card_type: cardType,
                     system_prompt: systemPrompt,
                     voice_openai: voice,
-                    temperature: temperature,
+                    temperature: temperature
                 })
             });
 
@@ -127,7 +69,7 @@ export function useRealtimeVoice({
             const data = await tokenResponse.json();
             const EPHEMERAL_KEY = data.client_secret.value;
 
-            // ─── STEP 3: Setup WebRTC Peer Connection ────────────────────────────
+            // 2. Setup WebRTC Peer Connection
             const pc = new RTCPeerConnection();
             pcRef.current = pc;
 
@@ -135,54 +77,64 @@ export function useRealtimeVoice({
             pc.onconnectionstatechange = () => {
                 if (pc.connectionState === 'failed') {
                     setIsConnecting(false);
-                    if (onError) onError(new Error("WebRTC connection failed — check network or mic permissions"));
+                    if (onError) onError(new Error("WebRTC connection failed ??check network or mic permissions"));
                 }
             };
 
-            // ─── STEP 4: Wire AI audio output to the pre-created audio element ───
-            // audioEl was created and started (muted) at the top of this function.
-            // Assigning srcObject + unmuting here is treated by iOS as a continuation
-            // of the existing playback session — not a new autoplay — so it is allowed
-            // even though we are now deep inside async WebRTC negotiation.
+            // Create Audio Element for AI output and append to DOM
+            const audioEl = document.createElement("audio");
+            audioEl.autoplay = true;
+            audioEl.setAttribute("playsinline", ""); // Required for iOS inline playback
+            audioEl.style.display = "none";
+            document.body.appendChild(audioEl);
+            audioElRef.current = audioEl;
+
             pc.ontrack = (e) => {
                 if (e.track.kind === 'audio') {
                     audioEl.srcObject = e.streams[0];
-                    audioEl.muted = false; // unmute: the element is already playing
+                    // Explicit play() required on iOS Safari ??autoplay alone is not enough
                     audioEl.play().catch(err => console.warn("WebRTC audio play failed:", err));
                 }
             };
 
-            audioEl.onended = () => {
-                if (onAudioEnded) onAudioEnded();
-            };
-
-            // ─── STEP 5: Open Data Channel for sending events ────────────────────
+            // 3. Open Data Channel for sending events
             const dc = pc.createDataChannel("oai-events");
             dcRef.current = dc;
 
             // CRITICAL: only declare "connected" once the data channel is actually open.
+            // setRemoteDescription() completes before ICE+DTLS finishes, so the data
+            // channel readyState is still "connecting" at that point. Sending a message
+            // there would silently fail (the channel drops messages when not open).
             dc.addEventListener("open", () => {
+                // Match the VAD settings from session creation and enable noise reduction.
+                // (session.update is needed because the sessions API doesn't expose
+                //  input_audio_noise_reduction at creation time.)
+                dc.send(JSON.stringify({
+                    type: 'session.update',
+                    session: {
+                        turn_detection: {
+                            type: "server_vad",
+                            threshold: 0.6,
+                            prefix_padding_ms: 300,
+                            silence_duration_ms: 1200,
+                            create_response: true,
+                        },
+                        input_audio_noise_reduction: { type: "near_field" },
+                    }
+                }));
+
                 setIsConnected(true);
                 setIsConnecting(false);
-                if (localAudioTrackRef.current) {
-                    // In manual mode, start disabled. In auto mode, start enabled.
-                    if (manualMicControl) {
-                        localAudioTrackRef.current.enabled = false;
-                        setIsMicOpen(false);
-                    } else {
-                        localAudioTrackRef.current.enabled = true;
-                        setIsMicOpen(true);
-                    }
-                }
-                console.log("WebRTC data channel open — session ready.");
+                console.log("WebRTC data channel open ??session ready.");
             });
 
             dc.addEventListener("message", (e) => {
                 try {
                     const event = JSON.parse(e.data);
 
-                    // ── User voice activity ──────────────────────────────────────
+                    // ?? User voice activity ??????????????????????????????????????
                     if (event.type === 'input_audio_buffer.speech_started') {
+                        // Cancel any pending end-of-response timer (AI was interrupted)
                         if (responseEndTimerRef.current) {
                             clearTimeout(responseEndTimerRef.current);
                             responseEndTimerRef.current = null;
@@ -194,7 +146,7 @@ export function useRealtimeVoice({
                         setIsThinking(true);
                     }
 
-                    // ── AI response lifecycle ────────────────────────────────────
+                    // ?? AI response lifecycle ????????????????????????????????????
                     if (event.type === 'response.created') {
                         audioActiveRef.current = false; // reset for new response
                         if (responseEndTimerRef.current) {
@@ -202,18 +154,10 @@ export function useRealtimeVoice({
                             responseEndTimerRef.current = null;
                         }
                         setIsThinking(true);
-                        // Disable mic while AI is processing or speaking,
-                        // but only if it's manual PTT mode. For auto (normal) mode,
-                        // WebRTC's Echo Cancellation handles feedback, and keeping it
-                        // open allows the user to cleanly interrupt the AI.
-                        // Aggressively toggling track.enabled on PC can cause audio dropping bugs.
-                        if (localAudioTrackRef.current && manualMicControl) {
-                            localAudioTrackRef.current.enabled = false;
-                            setIsMicOpen(false);
-                        }
                     }
 
-                    if (event.type === 'response.output_item.added' && event.item?.type === 'message') {
+                    // First audio chunk of a response ??AI started speaking
+                    if (event.type === 'response.audio.delta') {
                         if (!audioActiveRef.current) {
                             audioActiveRef.current = true;
                             setIsThinking(false);
@@ -225,26 +169,24 @@ export function useRealtimeVoice({
                         onTextDelta(event.delta);
                     }
 
-                    // Response fully generated — wait a bit for buffered audio to finish
+                    // Response fully generated ??wait a bit for buffered audio to finish
                     if (event.type === 'response.done') {
                         responseEndTimerRef.current = setTimeout(() => {
                             audioActiveRef.current = false;
                             setIsThinking(false);
-                            if (localAudioTrackRef.current && !manualMicControl) {
-                                localAudioTrackRef.current.enabled = true;
-                                setIsMicOpen(true);
-                            }
                             if (onAudioEnded) onAudioEnded();
                         }, 400);
                     }
 
-                    // ── Function / tool calling ──────────────────────────────────
+                    // ?? Function / tool calling ??????????????????????????????????
+                    // Step 1: capture name + call_id when the function call item appears
                     if (event.type === 'response.output_item.added' && event.item?.type === 'function_call') {
                         pendingFunctionCallRef.current = {
                             name: event.item.name,
                             callId: event.item.call_id,
                         };
                     }
+                    // Step 2: all arguments have streamed in ??invoke handler
                     if (event.type === 'response.function_call_arguments.done') {
                         const pending = pendingFunctionCallRef.current;
                         const handler = onFunctionCallRef.current;
@@ -252,6 +194,7 @@ export function useRealtimeVoice({
                             try {
                                 const args = JSON.parse(event.arguments || '{}') as Record<string, unknown>;
                                 const callId = pending.callId;
+                                // respond() sends the result back and lets the model continue
                                 const respond = (output: string) => {
                                     if (!dcRef.current || dcRef.current.readyState !== 'open') return;
                                     dcRef.current.send(JSON.stringify({
@@ -277,18 +220,32 @@ export function useRealtimeVoice({
                 }
             });
 
-            // ─── STEP 6: Add pre-acquired mic tracks to the peer connection ──────
-            // Tracks must be added before createOffer() so they are included in SDP.
-            if (localStream) {
-                localStream.getTracks().forEach((track) => pc.addTrack(track, localStream!));
+            // 4. Capture local microphone audio
+            try {
+                setMicError(null);
+                const ms = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    }
+                });
+                ms.getTracks().forEach((track) => pc.addTrack(track, ms));
+            } catch (err: any) {
+                // Mic denied ??continue; text input + AI voice output still work
+                console.warn("Microphone access denied or not available", err);
+                const msg = err?.name === "NotAllowedError"
+                    ? "留덉씠??沅뚰븳??嫄곕??먯뼱?? 釉뚮씪?곗? 二쇱냼李????먮Ъ???꾩씠肄섏뿉??留덉씠?щ? ?덉슜?댁＜?몄슂."
+                    : "留덉씠?щ? ?ъ슜?????놁뼱?? ?띿뒪?몃줈 ??뷀븷 ???덉뒿?덈떎.";
+                setMicError(msg);
             }
 
-            // ─── STEP 7: Create Offer and Send it to OpenAI WebRTC Endpoint ─────
+            // 5. Create Offer and Send it to OpenAI WebRTC Endpoint
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
             const baseUrl = "https://api.openai.com/v1/realtime";
-            const model = "gpt-4o-mini-realtime-preview";
+            const model = "gpt-4o-realtime-preview";
 
             const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
                 method: "POST",
@@ -300,7 +257,7 @@ export function useRealtimeVoice({
             });
 
             if (!sdpResponse.ok) {
-                const errText = await sdpResponse.ok ? "" : await sdpResponse.text();
+                const errText = await sdpResponse.text();
                 throw new Error("Failed to connect SDP: " + errText);
             }
 
@@ -309,6 +266,9 @@ export function useRealtimeVoice({
                 sdp: await sdpResponse.text(),
             };
 
+            // ICE + DTLS negotiation happens in the background after this.
+            // setIsConnected(true) will be called from dc.onopen once the
+            // data channel is actually ready to send.
             await pc.setRemoteDescription(answer);
 
         } catch (error: any) {
@@ -316,7 +276,7 @@ export function useRealtimeVoice({
             setIsConnecting(false);
             if (onError) onError(error);
         }
-    }, [cardId, cardType, systemPrompt, voice, temperature, tools, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError, manualMicControl]);
+    }, [cardId, systemPrompt, voice, temperature, isConnected, isConnecting, onAudioStarted, onAudioEnded, onUserSpeaking, onTextDelta, onError]);
 
 
     const disconnect = useCallback(() => {
@@ -326,16 +286,6 @@ export function useRealtimeVoice({
         }
         audioActiveRef.current = false;
         pendingFunctionCallRef.current = null;
-
-        if (localAudioTrackRef.current) {
-            localAudioTrackRef.current.stop();
-            localAudioTrackRef.current = null;
-        }
-
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-            localStreamRef.current = null;
-        }
 
         if (pcRef.current) {
             pcRef.current.close();
@@ -352,7 +302,6 @@ export function useRealtimeVoice({
         }
         setIsConnected(false);
         setIsThinking(false);
-        setIsMicOpen(false);
     }, []);
 
     const sendMessage = useCallback((type: string, payload: any = {}) => {
@@ -387,11 +336,9 @@ export function useRealtimeVoice({
         sendMessage,
         sendTextMessage,
         updateContext,
-        setMicEnabled,
         isConnecting,
         isConnected,
         isThinking,
-        isMicOpen,
         micError
     };
 }

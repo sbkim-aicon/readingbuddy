@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { system_prompt, voice_openai, temperature, tools } = body;
+        const { system_prompt, voice_openai, temperature } = body;
         const isReadWithMe = body.card_type === 'read_with_me';
 
         // Fetch a WebRTC Ephemeral Token from OpenAI Realtime API
@@ -15,18 +15,18 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "gpt-4o-realtime-preview-2024-10-01",
+                model: "gpt-4o-mini-realtime-preview",
                 voice: voice_openai || "alloy",
                 instructions: system_prompt || "You are a helpful reading buddy.",
                 temperature: temperature || 0.8,
                 modalities: ["audio", "text"],
-                tools: tools?.map((t: any) => ({ type: 'function', ...t })) || undefined,
-                tool_choice: tools ? "auto" : undefined,
+                input_audio_noise_reduction: { type: "near_field" },
                 turn_detection: {
                     type: "server_vad",
-                    threshold: isReadWithMe ? 0.8 : 0.6, // Higher threshold (less sensitive) for reading
+                    threshold: isReadWithMe ? 0.7 : 0.6,
                     prefix_padding_ms: 300,
-                    silence_duration_ms: isReadWithMe ? 3500 : 2500 // Wait even longer for children's reading
+                    silence_duration_ms: isReadWithMe ? 1200 : 800,
+                    create_response: true,
                 }
             }),
         });
