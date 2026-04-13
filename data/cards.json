@@ -1,42 +1,5 @@
 [
-  {
-    "card_id": "story_12b1cd85",
-    "card_type": "read_with_me",
-    "title": "한국 꼬마 축구선수 시원의 꿈",
-    "subtitle": "우리가 함께 만든 동화책",
-    "cover_image": "/images/books/story_12b1cd85.png",
-    "persona_name": "Reading Buddy",
-    "prompt_file": null,
-    "book_data_path": "data/books/story_12b1cd85.json",
-    "voice_openai": "shimmer",
-    "temperature": 0.7,
-    "active": true,
-    "use_realtime": true,
-    "is_listen_only": false,
-    "sounds": {
-      "bgm": "sounds/Read%20with%20me_2.mp3",
-      "bgm_volume": 0.15
-    }
-  },
-  {
-    "card_id": "story_82462146",
-    "card_type": "read_with_me",
-    "title": "아기 상어의 먼 바다 모험",
-    "subtitle": "우리가 함께 만든 동화책",
-    "cover_image": "/images/books/story_82462146.png",
-    "persona_name": "Reading Buddy",
-    "prompt_file": null,
-    "book_data_path": "data/books/story_82462146.json",
-    "voice_openai": "shimmer",
-    "temperature": 0.7,
-    "active": true,
-    "use_realtime": true,
-    "is_listen_only": false,
-    "sounds": {
-      "bgm": "sounds/Read%20with%20me_2.mp3",
-      "bgm_volume": 0.15
-    }
-  },
+
   {
     "card_id": "story_0a1bdeb1",
     "card_type": "read_with_me",
