@@ -1,8 +1,15 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAIClient() {
+    if (!openaiInstance) {
+        openaiInstance = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return openaiInstance;
+}
 
 export async function generateOpenAIChatResponse(
     systemPrompt: string,
@@ -20,6 +27,7 @@ export async function generateOpenAIChatResponse(
             { role: "user", content: userMessage }
         ];
 
+        const openai = getOpenAIClient();
         const response = await openai.chat.completions.create({
             model: model, // Using provided model or gpt-4o-mini default
             messages: messages,

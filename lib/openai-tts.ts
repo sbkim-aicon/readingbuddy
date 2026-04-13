@@ -1,10 +1,18 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAIClient() {
+    if (!openaiInstance) {
+        openaiInstance = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return openaiInstance;
+}
 
 export async function generateTTS(text: string, voice: string = "alloy") {
+    const openai = getOpenAIClient();
     try {
         const mp3 = await openai.audio.speech.create({
             model: "tts-1",
